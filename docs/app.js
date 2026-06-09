@@ -339,6 +339,7 @@ const state = {
   partySize: 2,
   tripDate: "",
   month: "any",
+  dataMonths: [],
   results: [],
 };
 
@@ -490,6 +491,7 @@ async function runSearch() {
 }
 
 async function prepareResults(items) {
+  state.dataMonths = dataMonths(items);
   const enriched = await Promise.all(
     items
       .map(withFilteredSites)
@@ -778,7 +780,7 @@ function dateInRange(value, start, end) {
 
 function renderResults(items) {
   if (!items.length) {
-    resultsEl.innerHTML = `<article class="result-card"><h2>No available campsites found</h2><p class="meta">Try a larger distance, a different weekend, or fewer people.</p></article>`;
+    resultsEl.innerHTML = `<article class="result-card"><h2>No available campsites found</h2><p class="meta">${escapeHtml(noResultsMessage())}</p></article>`;
     return;
   }
 
@@ -929,11 +931,28 @@ function renderMapList(items) {
 
 function mapZoomForSearch() {
   const miles = state.maxDistance;
-  if (miles <= 25) return 10;
-  if (miles <= 50) return 9;
-  if (miles <= 90) return 8;
+  if (miles <= 25) return 9;
+  if (miles <= 50) return 8;
+  if (miles <= 90) return 7;
   if (miles <= 130) return 7;
   return 6;
+}
+
+function dataMonths(items) {
+  return [...new Set(
+    items.flatMap((item) => [String(item.date || "").slice(0, 7), String(item.end || "").slice(0, 7)]),
+  )]
+    .filter((month) => /^\d{4}-\d{2}$/.test(month))
+    .sort();
+}
+
+function noResultsMessage() {
+  const selectedMonth = state.tripDate ? state.tripDate.slice(0, 7) : state.month;
+  if (selectedMonth && selectedMonth !== "any" && !state.dataMonths.includes(selectedMonth)) {
+    const checked = state.dataMonths.length ? state.dataMonths.map(formatMonth).join(", ") : "no saved months";
+    return `No checked campsite data for ${formatMonth(selectedMonth)} yet. Current saved results cover ${checked}.`;
+  }
+  return "Try a larger distance, a different weekend, or fewer people.";
 }
 
 function directionsUrl(item) {
