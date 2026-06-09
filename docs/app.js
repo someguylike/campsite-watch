@@ -327,6 +327,10 @@ const siteMapIds = {
   [siteKey("Blake Island State Park", "Main Loop", "21")]: -2147483261,
 };
 
+const adaOnlySiteKeys = new Set([
+  siteKey("Dash Point State Park", "B", "26"),
+]);
+
 const state = {
   origin: zipCoordinates[ORIGIN],
   originQuery: ORIGIN,
@@ -488,10 +492,12 @@ async function runSearch() {
 async function prepareResults(items) {
   const enriched = await Promise.all(
     items
-    .map((item) => ({
-      ...item,
-      airDistanceMiles: distanceMiles(state.origin, item),
-    }))
+      .map(withFilteredSites)
+      .filter((item) => item.availableTentSites > 0)
+      .map((item) => ({
+        ...item,
+        airDistanceMiles: distanceMiles(state.origin, item),
+      }))
       .map(withRouteEstimate),
   );
 
@@ -500,12 +506,32 @@ async function prepareResults(items) {
     .sort((a, b) => sortDistance(a) - sortDistance(b) || a.date.localeCompare(b.date));
 }
 
+function withFilteredSites(item) {
+  const sampleSites = Array.isArray(item.sampleSites) ? item.sampleSites : [];
+  const filteredSites = sampleSites.filter((site) => !isAdaOnlySite(item.park, site));
+  const removedCount = sampleSites.length - filteredSites.length;
+  const availableTentSites = Math.max(0, Number(item.availableTentSites || 0) - removedCount);
+
+  return {
+    ...item,
+    availableTentSites,
+    sampleSites: filteredSites,
+  };
+}
+
+function isAdaOnlySite(park, site) {
+  return Array.isArray(site) && adaOnlySiteKeys.has(siteKey(park, site[0], site[1]));
+}
+
 async function fetchNasResults(apiBaseUrl) {
   const url = new URL("/api/search", apiBaseUrl);
+  const windowRange = searchWindow();
   url.searchParams.set("zip", zipInput.value.trim() || ORIGIN);
   url.searchParams.set("people", String(state.partySize));
   url.searchParams.set("distance", String(state.maxDistance));
   url.searchParams.set("distanceMode", distanceMode.value);
+  url.searchParams.set("windowStart", windowRange.start);
+  url.searchParams.set("windowEnd", windowRange.end);
   if (state.tripDate) {
     url.searchParams.set("date", state.tripDate);
   } else if (state.month !== "any") {
@@ -585,6 +611,7 @@ async function resolveZipFromCoords(lat, lon) {
 function matchesSearch(item) {
   const monthMatches =
     state.month === "any" || item.date.startsWith(state.month) || item.end.startsWith(state.month);
+  const windowRange = searchWindow();
   const distanceMatches =
     distanceMode.value === "hours"
       ? item.driveDurationMinutes
@@ -593,6 +620,7 @@ function matchesSearch(item) {
       : distanceValueMiles(item) <= state.maxDistance;
 
   return (
+    dateRangesOverlap(item.date, item.end, windowRange.start, windowRange.end) &&
     distanceMatches &&
     (!state.tripDate || dateInRange(state.tripDate, item.date, item.end)) &&
     (state.tripDate || monthMatches)
@@ -600,17 +628,60 @@ function matchesSearch(item) {
 }
 
 function populateDateFilters() {
-  const dates = availability.flatMap((item) => [item.date, item.end]).sort();
-  dateInput.min = dates[0];
-  dateInput.max = dates[dates.length - 1];
+  const windowRange = searchWindow();
+  dateInput.min = windowRange.start;
+  dateInput.max = windowRange.end;
 
-  const months = [...new Set(availability.flatMap((item) => [item.date.slice(0, 7), item.end.slice(0, 7)]))].sort();
+  const months = monthsInRange(windowRange.start, windowRange.end);
   monthFilter.insertAdjacentHTML(
     "beforeend",
     months
       .map((month) => `<option value="${month}">${formatMonth(month)}</option>`)
       .join(""),
   );
+}
+
+function searchWindow() {
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  return {
+    start: formatIsoDate(today),
+    end: formatIsoDate(addMonths(today, 6)),
+  };
+}
+
+function addMonths(date, months) {
+  const result = new Date(date);
+  const day = result.getDate();
+  result.setMonth(result.getMonth() + months);
+  if (result.getDate() !== day) {
+    result.setDate(0);
+  }
+  return result;
+}
+
+function formatIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function monthsInRange(start, end) {
+  const current = new Date(`${start.slice(0, 7)}-01T12:00:00`);
+  const last = new Date(`${end.slice(0, 7)}-01T12:00:00`);
+  const months = [];
+
+  while (current <= last) {
+    months.push(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`);
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  return months;
+}
+
+function dateRangesOverlap(startA, endA, startB, endB) {
+  return startA <= endB && endA >= startB;
 }
 
 function populateDistanceOptions() {
