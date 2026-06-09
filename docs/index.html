@@ -47,65 +47,67 @@
       </section>
 
       <section class="side-panel" aria-label="Search and results">
-        <form id="filters" class="filters">
-          <label class="field">
-            <span>Search</span>
-            <input
-              id="search-input"
-              type="search"
-              placeholder="Filter by park, date, loop, site, city, or ZIP"
-              autocomplete="off"
-            />
-          </label>
-
-          <fieldset class="field month-field">
-            <legend>Months</legend>
-            <div class="multi-select" id="month-select">
-              <button
-                id="month-select-button"
-                class="multi-select-button"
-                type="button"
-                aria-expanded="false"
-                aria-controls="month-options"
-              >
-                <span id="month-select-label">Jul, Aug, Sep</span>
-                <span aria-hidden="true">▾</span>
-              </button>
-              <div id="month-options" class="month-options" aria-label="Months to include" hidden>
-                <label><input type="checkbox" name="month" value="2026-07" checked /> July</label>
-                <label><input type="checkbox" name="month" value="2026-08" checked /> August</label>
-                <label><input type="checkbox" name="month" value="2026-09" checked /> September</label>
-                <label><input type="checkbox" name="month" value="2026-10" /> October</label>
-                <label><input type="checkbox" name="month" value="2026-11" /> November</label>
-                <label><input type="checkbox" name="month" value="2026-12" /> December</label>
-              </div>
-            </div>
-          </fieldset>
+        <form id="search-form" class="filters search-panel">
+          <div>
+            <h2>Find weekend campsites</h2>
+            <p class="form-intro">Search Friday-Sunday tent availability near a starting ZIP code.</p>
+          </div>
 
           <div class="filter-grid">
             <label class="field">
-              <span>Max distance</span>
-              <select id="distance-filter">
-                <option value="999">Any</option>
-                <option value="20">20 mi</option>
-                <option value="30" selected>30 mi</option>
-                <option value="50">50 mi</option>
-                <option value="80">80 mi</option>
+              <span>Starting ZIP code</span>
+              <div class="zip-row">
+                <input id="zip-input" name="zip" inputmode="numeric" maxlength="5" value="98040" required />
+                <button id="location-button" class="secondary-button" type="button">Use location</button>
+              </div>
+            </label>
+
+            <label class="field">
+              <span>Drive distance</span>
+              <select id="distance-filter" name="distance">
+                <option value="20">About 1 hour</option>
+                <option value="30" selected>About 1-2 hours</option>
+                <option value="50">About 2 hours</option>
+                <option value="80">About 3-4 hours</option>
               </select>
             </label>
           </div>
 
-          <fieldset class="field">
-            <legend>Minimum available sites</legend>
-            <div class="segmented" aria-label="Minimum available sites">
-              <input id="density-any" name="density" type="radio" value="1" checked />
-              <label for="density-any">1+ sites</label>
-              <input id="density-five" name="density" type="radio" value="5" />
-              <label for="density-five">5+ sites</label>
-              <input id="density-twenty" name="density" type="radio" value="20" />
-              <label for="density-twenty">20+ sites</label>
-            </div>
-          </fieldset>
+          <div class="filter-grid">
+            <label class="field">
+              <span>People</span>
+              <select id="party-size" name="partySize">
+                <option value="1">1 person</option>
+                <option value="2" selected>2 people</option>
+                <option value="3">3 people</option>
+                <option value="4">4 people</option>
+                <option value="5">5 people</option>
+                <option value="6">6 people</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Weekend</span>
+              <select id="weekend-filter" name="weekend">
+                <option value="any" selected>Any available weekend</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Optional keyword</span>
+            <input
+              id="keyword-input"
+              type="search"
+              placeholder="Park, loop, site, city, or ZIP"
+              autocomplete="off"
+            />
+          </label>
+
+          <button id="search-button" type="submit">Search campsites</button>
+          <p id="search-note" class="field-help">
+            Current demo data is from Washington State Parks searches near 98040 for 1 tent.
+          </p>
         </form>
 
         <section class="watch-card" aria-labelledby="watch-title">
@@ -118,6 +120,8 @@
             <span>Notify</span>
           </label>
         </section>
+
+        <section id="map-list" class="map-list" aria-label="Available parks"></section>
 
         <div id="results" class="results" aria-live="polite"></div>
       </section>

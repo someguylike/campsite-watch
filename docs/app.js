@@ -315,94 +315,84 @@ function result(date, end, park, distanceMiles, availableTentSites, sampleSites)
   };
 }
 
+const zipCoordinates = {
+  "98040": { lat: 47.5707, lon: -122.2221, label: "98040" },
+};
+
+const siteMapIds = {
+  [siteKey("Blake Island State Park", "Main Loop", "21")]: -2147483261,
+};
+
 const state = {
-  search: "",
-  months: new Set(["2026-07", "2026-08", "2026-09"]),
+  origin: zipCoordinates[ORIGIN],
+  originQuery: ORIGIN,
   maxDistance: 30,
-  minSites: 1,
+  partySize: 2,
+  weekend: "any",
+  keyword: "",
+  results: [],
 };
 
 const map = L.map("map", {
+  attributionControl: false,
+  boxZoom: false,
+  doubleClickZoom: false,
+  dragging: false,
+  keyboard: false,
+  scrollWheelZoom: false,
+  tap: false,
+  touchZoom: false,
   zoomControl: false,
 }).setView([47.49, -122.45], 9);
 
-L.control.zoom({ position: "bottomright" }).addTo(map);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
-
-L.circle(ORIGIN_COORDS, {
-  radius: 48280,
-  color: "#1f4e79",
-  fillOpacity: 0,
-  opacity: 0.24,
-  weight: 2,
-}).addTo(map);
-
-L.marker(ORIGIN_COORDS, {
-  icon: L.divIcon({
-    className: "",
-    html: `<div class="origin-marker">${ORIGIN}</div>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-  }),
-})
-  .bindPopup(`<div class="popup-title">Origin ZIP ${ORIGIN}</div><div class="popup-copy">Distances are estimated from Mercer Island.</div>`)
-  .addTo(map);
 
 const markers = new Map();
+let originMarker = null;
+let distanceCircle = null;
 const resultsEl = document.querySelector("#results");
 const visibleCountEl = document.querySelector("#visible-count");
+const searchForm = document.querySelector("#search-form");
+const zipInput = document.querySelector("#zip-input");
+const distanceFilter = document.querySelector("#distance-filter");
+const partySizeInput = document.querySelector("#party-size");
+const weekendFilter = document.querySelector("#weekend-filter");
+const keywordInput = document.querySelector("#keyword-input");
+const searchNote = document.querySelector("#search-note");
+const mapListEl = document.querySelector("#map-list");
 
-document.querySelector("#search-input").addEventListener("input", (event) => {
-  state.search = event.target.value.trim().toLowerCase();
-  render();
+populateWeekendOptions();
+
+searchForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await runSearch();
 });
 
-const monthSelect = document.querySelector("#month-select");
-const monthButton = document.querySelector("#month-select-button");
-const monthOptions = document.querySelector("#month-options");
-const monthLabel = document.querySelector("#month-select-label");
-
-monthButton.addEventListener("click", () => {
-  const isOpen = monthButton.getAttribute("aria-expanded") === "true";
-  setMonthDropdownOpen(!isOpen);
-});
-
-document.addEventListener("click", (event) => {
-  if (!monthSelect.contains(event.target)) {
-    setMonthDropdownOpen(false);
+document.querySelector("#location-button").addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    toast("Browser location is not available.");
+    return;
   }
-});
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    setMonthDropdownOpen(false);
-    monthButton.focus();
-  }
-});
-
-document.querySelectorAll("input[name='month']").forEach((input) => {
-  input.addEventListener("change", () => {
-    state.months = new Set(
-      [...document.querySelectorAll("input[name='month']:checked")].map((node) => node.value),
-    );
-    updateMonthLabel();
-    render();
-  });
-});
-
-document.querySelector("#distance-filter").addEventListener("change", (event) => {
-  state.maxDistance = Number(event.target.value);
-  render();
-});
-
-document.querySelectorAll("input[name='density']").forEach((input) => {
-  input.addEventListener("change", () => {
-    state.minSites = Number(document.querySelector("input[name='density']:checked").value);
-    render();
-  });
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      state.origin = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+        label: "Current location",
+      };
+      state.originQuery = `${position.coords.latitude},${position.coords.longitude}`;
+      zipInput.value = "";
+      searchNote.textContent = "Using your browser location for distance estimates.";
+      runSearch();
+    },
+    () => {
+      toast("Location permission was not granted.");
+    },
+    { enableHighAccuracy: true, timeout: 8000 },
+  );
 });
 
 document.querySelector("#account-button").addEventListener("click", () => {
@@ -418,26 +408,58 @@ document.querySelector("#sync-button").addEventListener("click", () => {
   toast("Live sync will connect to the Python monitor next.");
 });
 
-function render() {
-  const items = availability.filter(matchesFilters);
-  visibleCountEl.textContent = String(items.length);
-  renderResults(items);
-  renderMarkers(items);
+async function runSearch() {
+  const zip = zipInput.value.trim();
+  state.maxDistance = Number(distanceFilter.value);
+  state.partySize = Number(partySizeInput.value);
+  state.weekend = weekendFilter.value;
+  state.keyword = keywordInput.value.trim().toLowerCase();
+
+  if (zip) {
+    state.origin = await resolveOrigin(zip);
+    state.originQuery = zip;
+  }
+
+  state.results = availability
+    .map((item) => ({
+      ...item,
+      displayDistanceMiles: Math.round(distanceMiles(state.origin, item)),
+    }))
+    .filter(matchesSearch)
+    .sort((a, b) => a.displayDistanceMiles - b.displayDistanceMiles || a.date.localeCompare(b.date));
+
+  visibleCountEl.textContent = String(state.results.length);
+  document.querySelector("#map-scope").textContent = `${state.origin.label} origin · ${state.maxDistance} mi search radius`;
+  renderResults(state.results);
+  renderMap(state.results);
+  renderMapList(state.results);
 }
 
-function setMonthDropdownOpen(isOpen) {
-  monthButton.setAttribute("aria-expanded", String(isOpen));
-  monthOptions.hidden = !isOpen;
+async function resolveOrigin(zip) {
+  if (zipCoordinates[zip]) {
+    return zipCoordinates[zip];
+  }
+
+  try {
+    const response = await fetch(`https://api.zippopotam.us/us/${encodeURIComponent(zip)}`);
+    if (!response.ok) {
+      throw new Error("ZIP lookup failed");
+    }
+    const data = await response.json();
+    const place = data.places[0];
+    return {
+      lat: Number(place.latitude),
+      lon: Number(place.longitude),
+      label: zip,
+    };
+  } catch {
+    toast("Could not look up that ZIP. Using 98040.");
+    zipInput.value = ORIGIN;
+    return zipCoordinates[ORIGIN];
+  }
 }
 
-function updateMonthLabel() {
-  const selected = [...document.querySelectorAll("input[name='month']:checked")].map((node) =>
-    node.parentElement.textContent.trim().slice(0, 3),
-  );
-  monthLabel.textContent = selected.length ? selected.join(", ") : "All months";
-}
-
-function matchesFilters(item) {
+function matchesSearch(item) {
   const haystack = [
     item.park,
     item.city,
@@ -450,54 +472,88 @@ function matchesFilters(item) {
     .toLowerCase();
 
   return (
-    item.distanceMiles <= state.maxDistance &&
-    item.availableTentSites >= state.minSites &&
-    (!state.months.size || state.months.has(item.date.slice(0, 7))) &&
-    (!state.search || haystack.includes(state.search))
+    item.displayDistanceMiles <= state.maxDistance &&
+    (state.weekend === "any" || item.date === state.weekend) &&
+    (!state.keyword || haystack.includes(state.keyword))
+  );
+}
+
+function populateWeekendOptions() {
+  const weekends = [...new Set(availability.map((item) => item.date))].sort();
+  weekendFilter.insertAdjacentHTML(
+    "beforeend",
+    weekends
+      .map((date) => {
+        const end = availability.find((item) => item.date === date).end;
+        return `<option value="${date}">${formatDate(date)}-${formatDate(end)}</option>`;
+      })
+      .join(""),
   );
 }
 
 function renderResults(items) {
   if (!items.length) {
-    resultsEl.innerHTML = `<article class="result-card"><h2>No matches</h2><p class="meta">Try a larger distance, a different month, or lower availability density.</p></article>`;
+    resultsEl.innerHTML = `<article class="result-card"><h2>No available campsites found</h2><p class="meta">Try a larger distance, a different weekend, or fewer people.</p></article>`;
     return;
   }
 
   resultsEl.innerHTML = items
     .map((item) => {
       const sites = item.sampleSites
-        .map(([loop, site]) => `<li>${escapeHtml(loop)} ${escapeHtml(site)}</li>`)
+        .map((site) => {
+          const exactSite = Boolean(siteMapId(item, site));
+          return `<li><a class="site-chip${exactSite ? " exact-site" : ""}" href="${reservationUrl(item, site)}" target="_blank" rel="noreferrer" title="${exactSite ? "Reserve this exact site" : "Open this park and weekend"}">${escapeHtml(site[0])} ${escapeHtml(site[1])}${exactSite ? " · exact" : ""}</a></li>`;
+        })
         .join("");
+      const firstSite = item.sampleSites[0];
       return `
         <article class="result-card" data-park="${escapeHtml(item.park)}">
           <div class="result-header">
             <div>
               <h2 class="park-name">${escapeHtml(item.park)}</h2>
-              <div class="meta">${formatDate(item.date)}-${formatDate(item.end)} · ${escapeHtml(item.city)}, ${escapeHtml(item.zip)} · ${item.distanceMiles} mi from ${ORIGIN}</div>
+              <div class="meta">${formatDate(item.date)}-${formatDate(item.end)} · ${escapeHtml(item.city)}, ${escapeHtml(item.zip)} · ${item.displayDistanceMiles} mi from ${escapeHtml(state.origin.label)}</div>
             </div>
             <div class="badge">${item.availableTentSites} sites</div>
           </div>
           <ul class="site-list">${sites}</ul>
           <div class="card-actions">
             <div class="link-group">
-              <a class="directions-link reserve-link" href="${reservationUrl(item)}" target="_blank" rel="noreferrer">Reserve</a>
+              <a class="directions-link reserve-link" href="${reservationUrl(item, firstSite)}" target="_blank" rel="noreferrer">${reservationLabel(item, firstSite)}</a>
               <a class="directions-link" href="${directionsUrl(item)}" target="_blank" rel="noreferrer">Directions</a>
             </div>
-            <span class="status-line">1 tent · Friday-Sunday · checked in Chrome</span>
+            <span class="status-line">1 tent · ${state.partySize} people · Friday-Sunday</span>
           </div>
         </article>
       `;
     })
     .join("");
 
-  resultsEl.querySelectorAll(".result-card").forEach((card) => {
-    card.addEventListener("mouseenter", () => focusPark(card.dataset.park));
-  });
 }
 
-function renderMarkers(items) {
+function renderMap(items) {
   markers.forEach((marker) => marker.remove());
   markers.clear();
+  originMarker?.remove();
+  distanceCircle?.remove();
+
+  const originLatLng = [state.origin.lat, state.origin.lon];
+  distanceCircle = L.circle(originLatLng, {
+    radius: state.maxDistance * 1609.34,
+    color: "#1f4e79",
+    fillOpacity: 0.04,
+    opacity: 0.22,
+    weight: 2,
+  }).addTo(map);
+
+  originMarker = L.marker(originLatLng, {
+    interactive: false,
+    icon: L.divIcon({
+      className: "",
+      html: `<div class="origin-marker">${escapeHtml(state.origin.label)}</div>`,
+      iconSize: [44, 34],
+      iconAnchor: [22, 17],
+    }),
+  }).addTo(map);
 
   const byPark = new Map();
   for (const item of items) {
@@ -507,73 +563,80 @@ function renderMarkers(items) {
     }
   }
 
-  Object.entries(parks).forEach(([parkName, park]) => {
-    const item = byPark.get(parkName);
-    const hasMatches = Boolean(item);
-    const marker = L.circleMarker([park.lat, park.lon], {
-      radius: hasMatches ? markerSize(item.availableTentSites) : 7,
-      color: "#0f5258",
-      fillColor: hasMatches ? "#28a06a" : "#9aa8b1",
-      fillOpacity: hasMatches ? 0.82 : 0.5,
-      weight: hasMatches ? 2 : 1,
+  [...byPark.entries()].forEach(([parkName, item], index) => {
+    const marker = L.marker([item.lat, item.lon], {
+      interactive: false,
+      icon: L.divIcon({
+        className: "",
+        html: `<div class="result-marker">${index + 1}</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      }),
     }).addTo(map);
-
-    marker.bindPopup(popupHtml(parkName, park, item));
     markers.set(parkName, marker);
   });
 
-  const bounds = [L.latLng(...ORIGIN_COORDS), ...[...markers.values()].map((marker) => marker.getLatLng())];
-  map.fitBounds(bounds, { padding: [36, 36], maxZoom: 10 });
+  const bounds = [originMarker.getLatLng(), ...[...markers.values()].map((marker) => marker.getLatLng())];
+  map.fitBounds(bounds, { padding: [44, 44], maxZoom: 10 });
 }
 
-function popupHtml(parkName, park, item) {
-  if (!item) {
-    return `
-      <div class="popup-title">${escapeHtml(parkName)}</div>
-      <div class="popup-copy">${escapeHtml(park.city)}, ${escapeHtml(park.zip)} · ${park.distanceMiles} mi from ${ORIGIN}</div>
-      <div class="popup-copy">No matching availability under the current filters.</div>
-      <div class="link-group">
-        <a class="directions-link" href="${directionsUrl(parkName, park)}" target="_blank" rel="noreferrer">Directions</a>
-      </div>
-    `;
+function renderMapList(items) {
+  const byPark = new Map();
+  for (const item of items) {
+    const current = byPark.get(item.park);
+    if (!current) {
+      byPark.set(item.park, {
+        park: item.park,
+        city: item.city,
+        distance: item.displayDistanceMiles,
+        weekends: 1,
+      });
+    } else {
+      current.weekends += 1;
+    }
   }
 
-  return `
-    <div class="popup-title">${escapeHtml(parkName)}</div>
-    <div class="popup-copy">${item.availableTentSites} tent sites · ${formatDate(item.date)}-${formatDate(item.end)} · ${item.distanceMiles} mi from ${ORIGIN}</div>
-    <div class="link-group">
-      <a class="directions-link reserve-link" href="${reservationUrl(item)}" target="_blank" rel="noreferrer">Reserve</a>
-      <a class="directions-link" href="${directionsUrl(parkName, park)}" target="_blank" rel="noreferrer">Directions</a>
-    </div>
+  if (!byPark.size) {
+    mapListEl.innerHTML = "";
+    return;
+  }
+
+  mapListEl.innerHTML = `
+    <h2>Map pins</h2>
+    <ol>
+      ${[...byPark.values()]
+        .map(
+          (item) =>
+            `<li><strong>${escapeHtml(item.park)}</strong><span>${escapeHtml(item.city)} · ${item.distance} mi · ${item.weekends} weekend${item.weekends === 1 ? "" : "s"}</span></li>`,
+        )
+        .join("")}
+    </ol>
   `;
 }
 
-function markerSize(count) {
-  if (count >= 50) return 15;
-  if (count >= 20) return 12;
-  if (count >= 5) return 10;
-  return 8;
+function directionsUrl(item) {
+  const origin = encodeURIComponent(state.originQuery);
+  const destination = encodeURIComponent(`${item.park}, ${item.city}, WA ${item.zip}`);
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
 }
 
-function focusPark(parkName) {
-  const marker = markers.get(parkName);
-  if (!marker) return;
-  marker.openPopup();
-  map.panTo(marker.getLatLng());
+function distanceMiles(origin, item) {
+  const radians = Math.PI / 180;
+  const dlat = (item.lat - origin.lat) * radians;
+  const dlon = (item.lon - origin.lon) * radians;
+  const a =
+    Math.sin(dlat / 2) ** 2 +
+    Math.cos(origin.lat * radians) * Math.cos(item.lat * radians) * Math.sin(dlon / 2) ** 2;
+  return 3958.8 * 2 * Math.asin(Math.sqrt(a));
 }
 
-function directionsUrl(parkNameOrItem, parkData = parkNameOrItem) {
-  const parkName = typeof parkNameOrItem === "string" ? parkNameOrItem : parkNameOrItem.park;
-  const destination = encodeURIComponent(`${parkName}, ${parkData.city}, WA ${parkData.zip}`);
-  return `https://www.google.com/maps/dir/?api=1&origin=${ORIGIN}&destination=${destination}`;
-}
-
-function reservationUrl(item) {
+function reservationUrl(item, site = null) {
   const searchTime = new Date().toISOString().slice(0, 19);
+  const selectedMapId = siteMapId(item, site) ?? item.mapId;
   const params = new URLSearchParams({
     transactionLocationId: String(item.transactionLocationId),
     resourceLocationId: String(item.resourceLocationId),
-    mapId: String(item.mapId),
+    mapId: String(selectedMapId),
     searchTabGroupId: "0",
     bookingCategoryId: "0",
     startDate: item.date,
@@ -582,11 +645,24 @@ function reservationUrl(item) {
     isReserving: "true",
     equipmentId: "-32768",
     subEquipmentId: "-32768",
-    peopleCapacityCategoryCounts: "[[-32767,null,1,null]]",
+    peopleCapacityCategoryCounts: `[[-32767,null,${state.partySize},null]]`,
     searchTime,
     flexibleSearch: `[false,false,"${item.date.slice(0, 8)}01",1]`,
   });
   return `https://washington.goingtocamp.com/create-booking/results?${params.toString()}`;
+}
+
+function reservationLabel(item, site) {
+  return siteMapId(item, site) ? "Reserve exact site" : "Open booking";
+}
+
+function siteMapId(item, site) {
+  if (!site) return null;
+  return siteMapIds[siteKey(item.park, site[0], site[1])] ?? null;
+}
+
+function siteKey(park, loop, site) {
+  return `${park}::${loop}::${site}`.toLowerCase();
 }
 
 function formatDate(value) {
@@ -628,4 +704,4 @@ function toast(message) {
   window.setTimeout(() => node.remove(), 2400);
 }
 
-render();
+runSearch();

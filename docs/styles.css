@@ -191,15 +191,30 @@ h2 {
 
 .origin-marker {
   display: grid;
-  width: 34px;
+  min-width: 34px;
   height: 34px;
   place-items: center;
+  padding: 0 7px;
   border: 2px solid white;
-  border-radius: 50%;
+  border-radius: 999px;
   background: #1f4e79;
   box-shadow: 0 8px 20px rgb(24 52 69 / 28%);
   color: white;
   font-size: 1rem;
+  font-weight: 900;
+}
+
+.result-marker {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 8px 18px rgb(24 52 69 / 24%);
+  color: white;
+  font-size: 0.82rem;
   font-weight: 900;
 }
 
@@ -320,6 +335,12 @@ select:focus {
   outline: 0;
 }
 
+.zip-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
 .filter-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -371,6 +392,47 @@ select:focus {
   color: var(--muted);
   font-size: 0.86rem;
   line-height: 1.35;
+}
+
+.map-list {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 12px 14px;
+}
+
+.map-list:empty {
+  display: none;
+}
+
+.map-list h2 {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.map-list ol {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.map-list li {
+  padding-left: 2px;
+}
+
+.map-list strong,
+.map-list span {
+  display: block;
+}
+
+.map-list strong {
+  font-size: 0.86rem;
+}
+
+.map-list span {
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .switch {
@@ -435,6 +497,10 @@ select:focus {
 }
 
 .site-list li {
+  display: flex;
+}
+
+.site-chip {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
@@ -442,6 +508,18 @@ select:focus {
   font-size: 0.8rem;
   font-weight: 720;
   padding: 5px 8px;
+  text-decoration: none;
+}
+
+.site-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.exact-site {
+  border-color: rgb(21 127 59 / 45%);
+  background: #eef8f0;
+  color: #0f612e;
 }
 
 .card-actions {
@@ -553,6 +631,10 @@ select:focus {
 
   .top-actions {
     width: 100%;
+  }
+
+  .zip-row {
+    grid-template-columns: 1fr;
   }
 
   .top-actions button,
