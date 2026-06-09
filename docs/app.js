@@ -328,8 +328,8 @@ const state = {
   originQuery: ORIGIN,
   maxDistance: 30,
   partySize: 2,
-  weekend: "any",
-  keyword: "",
+  tripDate: "",
+  month: "any",
   results: [],
 };
 
@@ -356,18 +356,34 @@ const resultsEl = document.querySelector("#results");
 const visibleCountEl = document.querySelector("#visible-count");
 const searchForm = document.querySelector("#search-form");
 const zipInput = document.querySelector("#zip-input");
+const distanceMode = document.querySelector("#distance-mode");
 const distanceFilter = document.querySelector("#distance-filter");
 const partySizeInput = document.querySelector("#party-size");
-const weekendFilter = document.querySelector("#weekend-filter");
-const keywordInput = document.querySelector("#keyword-input");
+const dateInput = document.querySelector("#date-input");
+const monthFilter = document.querySelector("#month-filter");
 const searchNote = document.querySelector("#search-note");
 const mapListEl = document.querySelector("#map-list");
 
-populateWeekendOptions();
+populateDateFilters();
+populateDistanceOptions();
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await runSearch();
+});
+
+distanceMode.addEventListener("change", populateDistanceOptions);
+
+dateInput.addEventListener("change", () => {
+  if (dateInput.value) {
+    monthFilter.value = "any";
+  }
+});
+
+monthFilter.addEventListener("change", () => {
+  if (monthFilter.value !== "any") {
+    dateInput.value = "";
+  }
 });
 
 document.querySelector("#location-button").addEventListener("click", () => {
@@ -377,15 +393,21 @@ document.querySelector("#location-button").addEventListener("click", () => {
   }
 
   navigator.geolocation.getCurrentPosition(
-    (position) => {
+    async (position) => {
       state.origin = {
         lat: position.coords.latitude,
         lon: position.coords.longitude,
         label: "Current location",
       };
       state.originQuery = `${position.coords.latitude},${position.coords.longitude}`;
-      zipInput.value = "";
       searchNote.textContent = "Using your browser location for distance estimates.";
+      const zip = await resolveZipFromCoords(position.coords.latitude, position.coords.longitude);
+      if (zip) {
+        zipInput.value = zip;
+        state.origin.label = zip;
+        state.originQuery = zip;
+        searchNote.textContent = "ZIP code was filled from your browser location.";
+      }
       runSearch();
     },
     () => {
@@ -410,10 +432,10 @@ document.querySelector("#sync-button").addEventListener("click", () => {
 
 async function runSearch() {
   const zip = zipInput.value.trim();
-  state.maxDistance = Number(distanceFilter.value);
+  state.maxDistance = selectedDistanceMiles();
   state.partySize = Number(partySizeInput.value);
-  state.weekend = weekendFilter.value;
-  state.keyword = keywordInput.value.trim().toLowerCase();
+  state.tripDate = dateInput.value;
+  state.month = monthFilter.value;
 
   if (zip) {
     state.origin = await resolveOrigin(zip);
@@ -429,7 +451,7 @@ async function runSearch() {
     .sort((a, b) => a.displayDistanceMiles - b.displayDistanceMiles || a.date.localeCompare(b.date));
 
   visibleCountEl.textContent = String(state.results.length);
-  document.querySelector("#map-scope").textContent = `${state.origin.label} origin · ${state.maxDistance} mi search radius`;
+  document.querySelector("#map-scope").textContent = `${state.origin.label} origin · ${distanceLabel()} search radius`;
   renderResults(state.results);
   renderMap(state.results);
   renderMapList(state.results);
@@ -459,36 +481,86 @@ async function resolveOrigin(zip) {
   }
 }
 
+async function resolveZipFromCoords(lat, lon) {
+  try {
+    const url = new URL("https://nominatim.openstreetmap.org/reverse");
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("lat", String(lat));
+    url.searchParams.set("lon", String(lon));
+    url.searchParams.set("zoom", "18");
+    url.searchParams.set("addressdetails", "1");
+    const response = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return "";
+    const data = await response.json();
+    return data.address?.postcode?.match(/\d{5}/)?.[0] ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function matchesSearch(item) {
-  const haystack = [
-    item.park,
-    item.city,
-    item.zip,
-    item.date,
-    item.end,
-    ...item.sampleSites.flat(),
-  ]
-    .join(" ")
-    .toLowerCase();
+  const monthMatches =
+    state.month === "any" || item.date.startsWith(state.month) || item.end.startsWith(state.month);
 
   return (
     item.displayDistanceMiles <= state.maxDistance &&
-    (state.weekend === "any" || item.date === state.weekend) &&
-    (!state.keyword || haystack.includes(state.keyword))
+    (!state.tripDate || dateInRange(state.tripDate, item.date, item.end)) &&
+    (state.tripDate || monthMatches)
   );
 }
 
-function populateWeekendOptions() {
-  const weekends = [...new Set(availability.map((item) => item.date))].sort();
-  weekendFilter.insertAdjacentHTML(
+function populateDateFilters() {
+  const dates = availability.flatMap((item) => [item.date, item.end]).sort();
+  dateInput.min = dates[0];
+  dateInput.max = dates[dates.length - 1];
+
+  const months = [...new Set(availability.flatMap((item) => [item.date.slice(0, 7), item.end.slice(0, 7)]))].sort();
+  monthFilter.insertAdjacentHTML(
     "beforeend",
-    weekends
-      .map((date) => {
-        const end = availability.find((item) => item.date === date).end;
-        return `<option value="${date}">${formatDate(date)}-${formatDate(end)}</option>`;
-      })
+    months
+      .map((month) => `<option value="${month}">${formatMonth(month)}</option>`)
       .join(""),
   );
+}
+
+function populateDistanceOptions() {
+  const selectedValue = distanceFilter.value || "30";
+  const options =
+    distanceMode.value === "miles"
+      ? [
+          ["20", "20 miles"],
+          ["30", "30 miles"],
+          ["50", "50 miles"],
+          ["80", "80 miles"],
+        ]
+      : [
+          ["20", "About 1 hour"],
+          ["30", "About 1-2 hours"],
+          ["50", "About 2 hours"],
+          ["80", "About 3-4 hours"],
+        ];
+
+  distanceFilter.innerHTML = options
+    .map(
+      ([value, label]) =>
+        `<option value="${value}"${value === selectedValue ? " selected" : ""}>${label}</option>`,
+    )
+    .join("");
+}
+
+function selectedDistanceMiles() {
+  return Number(distanceFilter.value);
+}
+
+function distanceLabel() {
+  const selected = distanceFilter.options[distanceFilter.selectedIndex];
+  return selected ? selected.textContent : `${state.maxDistance} miles`;
+}
+
+function dateInRange(value, start, end) {
+  return value >= start && value <= end;
 }
 
 function renderResults(items) {
@@ -668,6 +740,11 @@ function siteKey(park, loop, site) {
 function formatDate(value) {
   const date = new Date(`${value}T12:00:00`);
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
+}
+
+function formatMonth(value) {
+  const date = new Date(`${value}-01T12:00:00`);
+  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(date);
 }
 
 function escapeHtml(value) {

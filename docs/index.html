@@ -34,7 +34,7 @@
         <div class="map-toolbar" aria-label="Map summary">
           <div>
             <strong id="visible-count">0</strong>
-            <span>matching weekends</span>
+            <span>available campsites</span>
             <small id="map-scope">98040 origin · all monitored parks shown</small>
           </div>
           <a
@@ -50,7 +50,7 @@
         <form id="search-form" class="filters search-panel">
           <div>
             <h2>Find weekend campsites</h2>
-            <p class="form-intro">Search Friday-Sunday tent availability near a starting ZIP code.</p>
+            <p class="form-intro">Enter where you are starting, when you want to go, and how many people are coming.</p>
           </div>
 
           <div class="filter-grid">
@@ -63,50 +63,58 @@
             </label>
 
             <label class="field">
-              <span>Drive distance</span>
-              <select id="distance-filter" name="distance">
-                <option value="20">About 1 hour</option>
-                <option value="30" selected>About 1-2 hours</option>
-                <option value="50">About 2 hours</option>
-                <option value="80">About 3-4 hours</option>
+              <span>Group size</span>
+              <select id="party-size" name="partySize">
+                <option value="2" selected>2 people</option>
+                <option value="3">3 people</option>
+                <option value="4">4 people</option>
+                <option value="5">5 people</option>
+                <option value="6">6 people</option>
+                <option value="7">7 people</option>
+                <option value="8">8 people</option>
+                <option value="9">9 people</option>
+                <option value="10">10 people</option>
+                <option value="11">11 people</option>
+                <option value="12">12 people</option>
+                <option value="13">13 people</option>
+                <option value="14">14 people</option>
+                <option value="15">15 people</option>
               </select>
             </label>
           </div>
 
           <div class="filter-grid">
             <label class="field">
-              <span>People</span>
-              <select id="party-size" name="partySize">
-                <option value="1">1 person</option>
-                <option value="2" selected>2 people</option>
-                <option value="3">3 people</option>
-                <option value="4">4 people</option>
-                <option value="5">5 people</option>
-                <option value="6">6 people</option>
-              </select>
+              <span>Trip date</span>
+              <input id="date-input" name="date" type="date" />
             </label>
 
             <label class="field">
-              <span>Weekend</span>
-              <select id="weekend-filter" name="weekend">
-                <option value="any" selected>Any available weekend</option>
+              <span>Or month</span>
+              <select id="month-filter" name="month">
+                <option value="any" selected>Any available month</option>
               </select>
             </label>
           </div>
 
-          <label class="field">
-            <span>Optional keyword</span>
-            <input
-              id="keyword-input"
-              type="search"
-              placeholder="Park, loop, site, city, or ZIP"
-              autocomplete="off"
-            />
-          </label>
+          <div class="filter-grid">
+            <label class="field">
+              <span>Distance type</span>
+              <select id="distance-mode" name="distanceMode">
+                <option value="hours" selected>Drive time</option>
+                <option value="miles">Miles</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Distance</span>
+              <select id="distance-filter" name="distance"></select>
+            </label>
+          </div>
 
           <button id="search-button" type="submit">Search campsites</button>
           <p id="search-note" class="field-help">
-            Current demo data is from Washington State Parks searches near 98040 for 1 tent.
+            If you choose a trip date, month is ignored. Results show available Friday-Sunday campsite windows.
           </p>
         </form>
 
