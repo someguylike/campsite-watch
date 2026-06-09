@@ -1,0 +1,42 @@
+# Copy this to config.toml and edit the watch URLs/rules.
+interval_minutes = 15
+state_db = "./data/state.sqlite3"
+
+[notify]
+# Easiest option: install the ntfy mobile app, create a private topic, and add its URL.
+# ntfy_urls = ["https://ntfy.sh/your-private-campsite-topic"]
+
+# Generic Slack/Discord-style webhook. The service sends {"text": "..."} JSON.
+# webhook_urls = ["https://hooks.slack.com/services/..."]
+
+# SMTP also works if your NAS can send email.
+# smtp_host = "smtp.gmail.com"
+# smtp_port = 587
+# smtp_username = "you@example.com"
+# smtp_password = "app-password"
+# smtp_from = "you@example.com"
+# smtp_to = ["you@example.com"]
+
+[browser]
+user_data_dir = "./browser-profile"
+headless = true
+timeout_seconds = 45
+
+[[watch]]
+name = "WA campsite search"
+
+# Use "browser" for washington.goingtocamp.com. Plain HTTP currently returns Azure WAF/captcha.
+backend = "browser"
+
+# Open washington.goingtocamp.com in a normal browser, set the park/site filters and a sample
+# Friday-Sunday date, then paste the resulting search URL here. If the site puts dates in
+# the URL, replace them with {arrival} and {departure}; otherwise use a fixed URL and the
+# browser session will check whatever the page shows.
+url_template = "https://washington.goingtocamp.com/"
+
+# Keep these specific after inspecting the page text. Overly broad words can create false positives.
+include_any = ["available", "reserve"]
+exclude_any = ["no sites available", "sold out", "unavailable"]
+
+date_window = { earliest_months_ahead = 3, latest_months_ahead = 6, stay_nights = 2, arrival_weekdays = [4] }
+

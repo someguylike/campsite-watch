@@ -1,0 +1,12 @@
+services:
+  campsite-watch:
+    build: .
+    container_name: campsite-watch
+    restart: unless-stopped
+    volumes:
+      - ./config.toml:/config/config.toml:ro
+      - ./data:/app/data
+      - ./browser-profile:/app/browser-profile
+    environment:
+      - TZ=America/Los_Angeles
+    command: ["campsite-watch", "--config", "/config/config.toml", "--alert-all-changes"]

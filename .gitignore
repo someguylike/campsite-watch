@@ -1,0 +1,7 @@
+config.toml
+data/
+browser-profile/
+*.egg-info/
+__pycache__/
+.venv/
+
