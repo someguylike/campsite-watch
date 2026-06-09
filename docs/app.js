@@ -337,7 +337,8 @@ const state = {
   maxDistance: 30,
   maxDriveMinutes: 120,
   partySize: 2,
-  tripDate: "",
+  startDate: "",
+  endDate: "",
   month: "any",
   dataMonths: [],
   results: [],
@@ -370,7 +371,8 @@ const zipInput = document.querySelector("#zip-input");
 const distanceMode = document.querySelector("#distance-mode");
 const distanceFilter = document.querySelector("#distance-filter");
 const partySizeInput = document.querySelector("#party-size");
-const dateInput = document.querySelector("#date-input");
+const startDateInput = document.querySelector("#start-date-input");
+const endDateInput = document.querySelector("#end-date-input");
 const monthFilter = document.querySelector("#month-filter");
 const searchNote = document.querySelector("#search-note");
 const mapListEl = document.querySelector("#map-list");
@@ -385,15 +387,23 @@ searchForm.addEventListener("submit", async (event) => {
 
 distanceMode.addEventListener("change", populateDistanceOptions);
 
-dateInput.addEventListener("change", () => {
-  if (dateInput.value) {
+startDateInput.addEventListener("change", syncDateRange);
+
+endDateInput.addEventListener("change", syncDateRange);
+
+function syncDateRange() {
+  if (startDateInput.value || endDateInput.value) {
     monthFilter.value = "any";
   }
-});
+  if (startDateInput.value && endDateInput.value && endDateInput.value < startDateInput.value) {
+    endDateInput.value = startDateInput.value;
+  }
+}
 
 monthFilter.addEventListener("change", () => {
   if (monthFilter.value !== "any") {
-    dateInput.value = "";
+    startDateInput.value = "";
+    endDateInput.value = "";
   }
 });
 
@@ -451,7 +461,8 @@ async function runSearch() {
   state.maxDistance = selectedDistanceMiles();
   state.maxDriveMinutes = selectedDriveMinutes();
   state.partySize = Number(partySizeInput.value);
-  state.tripDate = dateInput.value;
+  state.startDate = startDateInput.value;
+  state.endDate = endDateInput.value || startDateInput.value;
   state.month = monthFilter.value;
 
   if (zip) {
@@ -534,8 +545,9 @@ async function fetchNasResults(apiBaseUrl) {
   url.searchParams.set("distanceMode", distanceMode.value);
   url.searchParams.set("windowStart", windowRange.start);
   url.searchParams.set("windowEnd", windowRange.end);
-  if (state.tripDate) {
-    url.searchParams.set("date", state.tripDate);
+  if (state.startDate || state.endDate) {
+    url.searchParams.set("startDate", state.startDate || state.endDate);
+    url.searchParams.set("endDate", state.endDate || state.startDate);
   } else if (state.month !== "any") {
     url.searchParams.set("month", state.month);
   }
@@ -624,15 +636,17 @@ function matchesSearch(item) {
   return (
     dateRangesOverlap(item.date, item.end, windowRange.start, windowRange.end) &&
     distanceMatches &&
-    (!state.tripDate || dateInRange(state.tripDate, item.date, item.end)) &&
-    (state.tripDate || monthMatches)
+    (!hasSelectedDateRange() || containsSelectedDateRange(item)) &&
+    (hasSelectedDateRange() || monthMatches)
   );
 }
 
 function populateDateFilters() {
   const windowRange = searchWindow();
-  dateInput.min = windowRange.start;
-  dateInput.max = windowRange.end;
+  startDateInput.min = windowRange.start;
+  startDateInput.max = windowRange.end;
+  endDateInput.min = windowRange.start;
+  endDateInput.max = windowRange.end;
 
   const months = monthsInRange(windowRange.start, windowRange.end);
   monthFilter.insertAdjacentHTML(
@@ -774,8 +788,31 @@ function formatDateTime(value) {
   }).format(date);
 }
 
-function dateInRange(value, start, end) {
-  return value >= start && value <= end;
+function hasSelectedDateRange() {
+  return Boolean(state.startDate || state.endDate);
+}
+
+function selectedDateRange() {
+  const start = state.startDate || state.endDate;
+  const end = state.endDate || state.startDate;
+  return { start, end };
+}
+
+function containsSelectedDateRange(item) {
+  const range = selectedDateRange();
+  return Boolean(range.start && range.end && item.date <= range.start && item.end >= range.end);
+}
+
+function bookingRange(item) {
+  if (hasSelectedDateRange()) {
+    return selectedDateRange();
+  }
+  return { start: item.date, end: item.end };
+}
+
+function stayLabel(item) {
+  const range = bookingRange(item);
+  return `${formatDate(range.start)}-${formatDate(range.end)}`;
 }
 
 function renderResults(items) {
@@ -808,7 +845,7 @@ function renderResults(items) {
               <a class="directions-link reserve-link" href="${reservationUrl(item, firstSite)}" target="_blank" rel="noreferrer">${reservationLabel(item, firstSite)}</a>
               <a class="directions-link" href="${directionsUrl(item)}" target="_blank" rel="noreferrer">Directions</a>
             </div>
-            <span class="status-line">1 tent · ${state.partySize} people · Friday-Sunday</span>
+            <span class="status-line">1 tent · ${state.partySize} people · ${stayLabel(item)}</span>
           </div>
         </article>
       `;
@@ -947,7 +984,8 @@ function dataMonths(items) {
 }
 
 function noResultsMessage() {
-  const selectedMonth = state.tripDate ? state.tripDate.slice(0, 7) : state.month;
+  const range = selectedDateRange();
+  const selectedMonth = range.start ? range.start.slice(0, 7) : state.month;
   if (selectedMonth && selectedMonth !== "any" && !state.dataMonths.includes(selectedMonth)) {
     const checked = state.dataMonths.length ? state.dataMonths.map(formatMonth).join(", ") : "no saved months";
     return `No checked campsite data for ${formatMonth(selectedMonth)} yet. Current saved results cover ${checked}.`;
@@ -1029,23 +1067,31 @@ function formatDuration(minutes) {
 function reservationUrl(item, site = null) {
   const searchTime = new Date().toISOString().slice(0, 19);
   const selectedMapId = siteMapId(item, site) ?? item.mapId;
+  const range = bookingRange(item);
   const params = new URLSearchParams({
     transactionLocationId: String(item.transactionLocationId),
     resourceLocationId: String(item.resourceLocationId),
     mapId: String(selectedMapId),
     searchTabGroupId: "0",
     bookingCategoryId: "0",
-    startDate: item.date,
-    endDate: item.end,
-    nights: "2",
+    startDate: range.start,
+    endDate: range.end,
+    nights: String(nightsBetween(range.start, range.end)),
     isReserving: "true",
     equipmentId: "-32768",
     subEquipmentId: "-32768",
     peopleCapacityCategoryCounts: `[[-32767,null,${state.partySize},null]]`,
     searchTime,
-    flexibleSearch: `[false,false,"${item.date.slice(0, 8)}01",1]`,
+    flexibleSearch: `[false,false,"${range.start.slice(0, 8)}01",1]`,
   });
   return `https://washington.goingtocamp.com/create-booking/results?${params.toString()}`;
+}
+
+function nightsBetween(start, end) {
+  const startTime = new Date(`${start}T12:00:00`).getTime();
+  const endTime = new Date(`${end}T12:00:00`).getTime();
+  const days = Math.round((endTime - startTime) / 86400000);
+  return Math.max(1, days);
 }
 
 function reservationLabel(item, site) {
