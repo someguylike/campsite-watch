@@ -369,14 +369,9 @@ const dateInput = document.querySelector("#date-input");
 const monthFilter = document.querySelector("#month-filter");
 const searchNote = document.querySelector("#search-note");
 const mapListEl = document.querySelector("#map-list");
-const savedWatchSummary = document.querySelector("#saved-watch-summary");
-const notifyToggle = document.querySelector("#notify-toggle");
-const runSavedWatchButton = document.querySelector("#run-saved-watch");
-const clearSavedWatchButton = document.querySelector("#clear-saved-watch");
 
 populateDateFilters();
 populateDistanceOptions();
-renderSavedWatch();
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -428,31 +423,7 @@ document.querySelector("#location-button").addEventListener("click", () => {
   );
 });
 
-document.querySelector("#account-button").addEventListener("click", () => {
-  document.querySelector("#account-dialog").showModal();
-});
-
-document.querySelector("#watch-button").addEventListener("click", () => {
-  saveCurrentWatch();
-});
-
-runSavedWatchButton.addEventListener("click", async () => {
-  const watch = loadSavedWatch();
-  if (!watch) {
-    toast("No saved watch yet.");
-    return;
-  }
-  applyWatch(watch);
-  await runSearch();
-});
-
-clearSavedWatchButton.addEventListener("click", () => {
-  window.localStorage.removeItem("campsite-watch.saved");
-  renderSavedWatch();
-  toast("Saved watch cleared.");
-});
-
-document.querySelector("#sync-button").addEventListener("click", () => {
+document.querySelector("#sync-button")?.addEventListener("click", () => {
   const current = apiBase();
   const next = window.prompt("Private Tailscale NAS URL", current || DEFAULT_API_BASE_URL);
   if (next === null) return;
@@ -504,11 +475,11 @@ async function runSearch() {
     state.results = await prepareResults(availability);
     searchNote.textContent = apiBaseUrl
       ? "NAS worker is unavailable or blocked. Showing the latest saved website snapshot."
-      : "Showing the saved website snapshot. Connect a NAS worker for fresh live checks.";
+      : "Showing the saved website snapshot.";
   }
 
   document.querySelector("#map-scope").textContent =
-    `Start: ${state.origin.label}. Numbered pins are parks with available weekends. Click a pin for distance and booking details.`;
+    `Map shows start point ${state.origin.label} and parks with matching available campsites. Click a pin for distance and booking details.`;
   renderResults(state.results);
   renderMap(state.results);
   renderMapList(state.results);
@@ -590,67 +561,6 @@ async function resolveOrigin(zip) {
     zipInput.value = ORIGIN;
     return zipCoordinates[ORIGIN];
   }
-}
-
-function saveCurrentWatch() {
-  const watch = currentWatch();
-  window.localStorage.setItem("campsite-watch.saved", JSON.stringify(watch));
-  renderSavedWatch();
-  toast("Saved this search watch.");
-}
-
-function currentWatch() {
-  return {
-    zip: zipInput.value.trim() || ORIGIN,
-    partySize: Number(partySizeInput.value),
-    tripDate: dateInput.value,
-    month: monthFilter.value,
-    distanceMode: distanceMode.value,
-    distance: distanceFilter.value,
-    notify: notifyToggle.checked,
-  };
-}
-
-function loadSavedWatch() {
-  try {
-    const raw = window.localStorage.getItem("campsite-watch.saved");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function applyWatch(watch) {
-  zipInput.value = watch.zip || ORIGIN;
-  partySizeInput.value = String(watch.partySize || 2);
-  dateInput.value = watch.tripDate || "";
-  monthFilter.value = watch.month || "any";
-  distanceMode.value = watch.distanceMode || "hours";
-  populateDistanceOptions();
-  distanceFilter.value = watch.distance || (distanceMode.value === "hours" ? "120" : "30");
-  if (!distanceFilter.value) {
-    distanceFilter.value = distanceMode.value === "hours" ? "120" : "30";
-  }
-  notifyToggle.checked = watch.notify !== false;
-}
-
-function renderSavedWatch() {
-  const watch = loadSavedWatch();
-  runSavedWatchButton.disabled = !watch;
-  clearSavedWatchButton.disabled = !watch;
-
-  if (!watch) {
-    savedWatchSummary.textContent = "No saved watch yet. Set your search inputs, then click Save Watch.";
-    return;
-  }
-
-  const when = watch.tripDate
-    ? formatDate(watch.tripDate)
-    : watch.month && watch.month !== "any"
-      ? formatMonth(watch.month)
-      : "any available weekend";
-  const distanceText = watch.distanceMode === "miles" ? `${watch.distance} miles` : driveTimeLabel(watch.distance);
-  savedWatchSummary.textContent = `${watch.zip || ORIGIN} · ${when} · ${watch.partySize || 2} people · ${distanceText}`;
 }
 
 async function resolveZipFromCoords(lat, lon) {

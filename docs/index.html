@@ -18,11 +18,6 @@
         <p class="eyebrow">Washington campsite monitor</p>
         <h1>Campsite Watch</h1>
       </div>
-      <nav class="top-actions" aria-label="Primary">
-        <button id="sync-button" class="secondary-button" type="button">Connect NAS</button>
-        <button id="account-button" class="secondary-button" type="button">Account</button>
-        <button id="watch-button" type="button">Save Watch</button>
-      </nav>
     </header>
 
     <main class="layout">
@@ -32,7 +27,7 @@
           <div>
             <strong id="visible-count">0</strong>
             <span>available parks</span>
-            <small id="map-scope">Start pin plus numbered parks that match the current search.</small>
+            <small id="map-scope">Map shows your start point and parks with matching available campsites.</small>
           </div>
         </div>
       </section>
@@ -44,7 +39,7 @@
             <p class="form-intro">Enter where you are starting, when you want to go, and how many people are coming.</p>
           </div>
 
-          <div class="filter-grid">
+          <div class="filter-grid origin-grid">
             <label class="field">
               <span>Starting ZIP code</span>
               <div class="zip-row">
@@ -109,48 +104,11 @@
           </p>
         </form>
 
-        <section class="watch-card" aria-labelledby="watch-title">
-          <div>
-            <h2 id="watch-title">Saved watch</h2>
-            <p id="saved-watch-summary">No saved watch yet. Set your search inputs, then click Save Watch.</p>
-          </div>
-          <div class="watch-actions">
-            <label class="switch">
-              <input id="notify-toggle" type="checkbox" checked />
-              <span>Notify</span>
-            </label>
-            <button id="run-saved-watch" class="secondary-button" type="button">Run saved</button>
-            <button id="clear-saved-watch" class="secondary-button" type="button">Clear</button>
-          </div>
-        </section>
-
         <section id="map-list" class="map-list" aria-label="Available parks"></section>
 
         <div id="results" class="results" aria-live="polite"></div>
       </section>
     </main>
-
-    <dialog id="account-dialog" class="dialog">
-      <form method="dialog" class="dialog-panel">
-        <header>
-          <h2>Shared account model</h2>
-          <button class="icon-button" value="cancel" type="submit" title="Close">
-            <span aria-hidden="true">×</span>
-            <span class="sr-only">Close</span>
-          </button>
-        </header>
-        <p>
-          Recommended first version: one shared household account with saved watches and notification
-          destinations. Add per-user accounts after the monitor is stable.
-        </p>
-        <div class="account-options">
-          <label><input type="checkbox" checked /> Shared result board</label>
-          <label><input type="checkbox" checked /> Email or ntfy alerts</label>
-          <label><input type="checkbox" /> Per-user login</label>
-        </div>
-        <button value="default" type="submit">Done</button>
-      </form>
-    </dialog>
 
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
