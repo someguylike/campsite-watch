@@ -216,6 +216,16 @@ h2 {
   font-weight: 900;
 }
 
+.map-label {
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 8px 18px rgb(24 52 69 / 16%);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 820;
+}
+
 .side-panel {
   display: flex;
   min-height: 0;

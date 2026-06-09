@@ -3,6 +3,7 @@ const ORIGIN_COORDS = [47.5707, -122.2221];
 const DEFAULT_API_BASE_URL = "https://nampham-server.tail74e1b3.ts.net";
 const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
 const API_PASSWORD_STORAGE_KEY = "campsite-watch.apiPassword";
+const routeCache = new Map();
 
 const parks = {
   "Blake Island State Park": {
@@ -330,6 +331,7 @@ const state = {
   origin: zipCoordinates[ORIGIN],
   originQuery: ORIGIN,
   maxDistance: 30,
+  maxDriveMinutes: 120,
   partySize: 2,
   tripDate: "",
   month: "any",
@@ -338,14 +340,14 @@ const state = {
 
 const map = L.map("map", {
   attributionControl: false,
-  boxZoom: false,
-  doubleClickZoom: false,
-  dragging: false,
+  boxZoom: true,
+  doubleClickZoom: true,
+  dragging: true,
   keyboard: false,
   scrollWheelZoom: false,
-  tap: false,
-  touchZoom: false,
-  zoomControl: false,
+  tap: true,
+  touchZoom: true,
+  zoomControl: true,
 }).setView([47.49, -122.45], 9);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -353,6 +355,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 const markers = new Map();
+let connectionLines = [];
 let originMarker = null;
 let distanceCircle = null;
 const resultsEl = document.querySelector("#results");
@@ -470,6 +473,7 @@ document.querySelector("#sync-button").addEventListener("click", () => {
 async function runSearch() {
   const zip = zipInput.value.trim();
   state.maxDistance = selectedDistanceMiles();
+  state.maxDriveMinutes = selectedDriveMinutes();
   state.partySize = Number(partySizeInput.value);
   state.tripDate = dateInput.value;
   state.month = monthFilter.value;
@@ -494,31 +498,35 @@ async function runSearch() {
     state.results = [];
     searchNote.textContent = "Enter the NAS password to query fresh availability.";
   } else if (nasResult) {
-    state.results = prepareResults(nasResult.results);
+    state.results = await prepareResults(nasResult.results);
     searchNote.textContent = nasResult.note;
   } else {
-    state.results = prepareResults(availability);
+    state.results = await prepareResults(availability);
     searchNote.textContent = apiBaseUrl
       ? "NAS worker is unavailable or blocked. Showing the latest saved website snapshot."
       : "Showing the saved website snapshot. Connect a NAS worker for fresh live checks.";
   }
 
-  visibleCountEl.textContent = String(state.results.length);
   document.querySelector("#map-scope").textContent =
-    `${state.origin.label} start · ${distanceLabel()} radius · green numbers match the list`;
+    `Start: ${state.origin.label}. Numbered pins are parks with available weekends. Click a pin for distance and booking details.`;
   renderResults(state.results);
   renderMap(state.results);
   renderMapList(state.results);
 }
 
-function prepareResults(items) {
-  return items
+async function prepareResults(items) {
+  const enriched = await Promise.all(
+    items
     .map((item) => ({
       ...item,
-      displayDistanceMiles: Math.round(distanceMiles(state.origin, item)),
+      airDistanceMiles: distanceMiles(state.origin, item),
     }))
+      .map(withRouteEstimate),
+  );
+
+  return enriched
     .filter(matchesSearch)
-    .sort((a, b) => a.displayDistanceMiles - b.displayDistanceMiles || a.date.localeCompare(b.date));
+    .sort((a, b) => sortDistance(a) - sortDistance(b) || a.date.localeCompare(b.date));
 }
 
 async function fetchNasResults(apiBaseUrl) {
@@ -619,7 +627,10 @@ function applyWatch(watch) {
   monthFilter.value = watch.month || "any";
   distanceMode.value = watch.distanceMode || "hours";
   populateDistanceOptions();
-  distanceFilter.value = watch.distance || "30";
+  distanceFilter.value = watch.distance || (distanceMode.value === "hours" ? "120" : "30");
+  if (!distanceFilter.value) {
+    distanceFilter.value = distanceMode.value === "hours" ? "120" : "30";
+  }
   notifyToggle.checked = watch.notify !== false;
 }
 
@@ -664,9 +675,15 @@ async function resolveZipFromCoords(lat, lon) {
 function matchesSearch(item) {
   const monthMatches =
     state.month === "any" || item.date.startsWith(state.month) || item.end.startsWith(state.month);
+  const distanceMatches =
+    distanceMode.value === "hours"
+      ? item.driveDurationMinutes
+        ? item.driveDurationMinutes <= state.maxDriveMinutes
+        : item.airDistanceMiles <= state.maxDistance
+      : distanceValueMiles(item) <= state.maxDistance;
 
   return (
-    item.displayDistanceMiles <= state.maxDistance &&
+    distanceMatches &&
     (!state.tripDate || dateInRange(state.tripDate, item.date, item.end)) &&
     (state.tripDate || monthMatches)
   );
@@ -687,7 +704,8 @@ function populateDateFilters() {
 }
 
 function populateDistanceOptions() {
-  const selectedValue = distanceFilter.value || "30";
+  const defaultValue = distanceMode.value === "miles" ? "30" : "120";
+  const selectedValue = distanceFilter.value || defaultValue;
   const options =
     distanceMode.value === "miles"
       ? [
@@ -697,22 +715,37 @@ function populateDistanceOptions() {
           ["80", "80 miles"],
         ]
       : [
-          ["20", "About 1 hour"],
-          ["30", "About 1-2 hours"],
-          ["50", "About 2 hours"],
-          ["80", "About 3-4 hours"],
+          ["60", "Up to 1 hour"],
+          ["120", "Up to 2 hours"],
+          ["180", "Up to 3 hours"],
+          ["240", "Up to 4 hours"],
         ];
 
+  const validValue = options.some(([value]) => value === selectedValue) ? selectedValue : defaultValue;
   distanceFilter.innerHTML = options
     .map(
       ([value, label]) =>
-        `<option value="${value}"${value === selectedValue ? " selected" : ""}>${label}</option>`,
+        `<option value="${value}"${value === validValue ? " selected" : ""}>${label}</option>`,
     )
     .join("");
 }
 
 function selectedDistanceMiles() {
+  if (distanceMode.value === "hours") {
+    return (
+      {
+        60: 35,
+        120: 70,
+        180: 110,
+        240: 150,
+      }[Number(distanceFilter.value)] ?? 70
+    );
+  }
   return Number(distanceFilter.value);
+}
+
+function selectedDriveMinutes() {
+  return distanceMode.value === "hours" ? Number(distanceFilter.value) : Infinity;
 }
 
 function distanceLabel() {
@@ -726,7 +759,11 @@ function driveTimeLabel(value) {
       20: "about 1 hour",
       30: "about 1-2 hours",
       50: "about 2 hours",
+      60: "up to 1 hour",
       80: "about 3-4 hours",
+      120: "up to 2 hours",
+      180: "up to 3 hours",
+      240: "up to 4 hours",
     }[Number(value)] ?? `${value} miles`
   );
 }
@@ -778,7 +815,7 @@ function renderResults(items) {
           <div class="result-header">
             <div>
               <h2 class="park-name">${escapeHtml(item.park)}</h2>
-              <div class="meta">${formatDate(item.date)}-${formatDate(item.end)} · ${escapeHtml(item.city)}, ${escapeHtml(item.zip)} · ${item.displayDistanceMiles} mi from ${escapeHtml(state.origin.label)}</div>
+              <div class="meta">${formatDate(item.date)}-${formatDate(item.end)} · ${escapeHtml(item.city)}, ${escapeHtml(item.zip)} · ${distanceText(item)} from ${escapeHtml(state.origin.label)}</div>
             </div>
             <div class="badge">${item.availableTentSites} sites</div>
           </div>
@@ -800,27 +837,35 @@ function renderResults(items) {
 function renderMap(items) {
   markers.forEach((marker) => marker.remove());
   markers.clear();
+  connectionLines.forEach((line) => line.remove());
+  connectionLines = [];
   originMarker?.remove();
   distanceCircle?.remove();
+  distanceCircle = null;
 
   const originLatLng = [state.origin.lat, state.origin.lon];
-  distanceCircle = L.circle(originLatLng, {
-    radius: state.maxDistance * 1609.34,
-    color: "#1f4e79",
-    fillOpacity: 0.04,
-    opacity: 0.22,
-    weight: 2,
-  }).addTo(map);
+  if (distanceMode.value === "miles") {
+    distanceCircle = L.circle(originLatLng, {
+      radius: state.maxDistance * 1609.34,
+      color: "#1f4e79",
+      fillOpacity: 0.04,
+      opacity: 0.22,
+      weight: 2,
+    }).addTo(map);
+  }
 
   originMarker = L.marker(originLatLng, {
-    interactive: false,
+    interactive: true,
     icon: L.divIcon({
       className: "",
       html: `<div class="origin-marker">${escapeHtml(state.origin.label)}</div>`,
       iconSize: [44, 34],
       iconAnchor: [22, 17],
     }),
-  }).addTo(map);
+  })
+    .addTo(map)
+    .bindPopup(`<strong>Starting point</strong><br>${escapeHtml(state.origin.label)}`)
+    .bindTooltip("Start", { permanent: true, direction: "top", offset: [0, -18], className: "map-label" });
 
   const byPark = new Map();
   for (const item of items) {
@@ -831,20 +876,45 @@ function renderMap(items) {
   }
 
   [...byPark.entries()].forEach(([parkName, item], index) => {
-    const marker = L.marker([item.lat, item.lon], {
+    const parkLatLng = [item.lat, item.lon];
+    const line = L.polyline([originLatLng, parkLatLng], {
+      color: "#6f8794",
+      dashArray: "4 7",
+      opacity: 0.48,
+      weight: 2,
       interactive: false,
+    }).addTo(map);
+    connectionLines.push(line);
+
+    const marker = L.marker([item.lat, item.lon], {
+      interactive: true,
       icon: L.divIcon({
         className: "",
         html: `<div class="result-marker">${index + 1}</div>`,
         iconSize: [32, 32],
         iconAnchor: [16, 16],
       }),
-    }).addTo(map);
+    })
+      .addTo(map)
+      .bindPopup(
+        `<strong>${index + 1}. ${escapeHtml(parkName)}</strong><br>${escapeHtml(item.city)}, ${escapeHtml(item.zip)}<br>${escapeHtml(distanceText(item))}<br>${item.availableTentSites} available sites`,
+      )
+      .bindTooltip(`${index + 1}. ${parkName}`, {
+        permanent: true,
+        direction: "top",
+        offset: [0, -18],
+        className: "map-label",
+      });
     markers.set(parkName, marker);
   });
 
+  visibleCountEl.textContent = String(byPark.size);
   const bounds = [originMarker.getLatLng(), ...[...markers.values()].map((marker) => marker.getLatLng())];
-  map.fitBounds(bounds, { padding: [44, 44], maxZoom: 10 });
+  if (bounds.length > 1) {
+    map.fitBounds(bounds, { padding: [56, 56], maxZoom: 10 });
+  } else {
+    map.setView(originLatLng, 9);
+  }
 }
 
 function renderMapList(items) {
@@ -855,7 +925,7 @@ function renderMapList(items) {
       byPark.set(item.park, {
         park: item.park,
         city: item.city,
-        distance: item.displayDistanceMiles,
+        distance: distanceText(item),
         weekends: 1,
       });
     } else {
@@ -869,12 +939,12 @@ function renderMapList(items) {
   }
 
   mapListEl.innerHTML = `
-    <h2>Numbered parks on the map</h2>
+    <h2>Available parks on the map</h2>
     <ol>
       ${[...byPark.values()]
         .map(
           (item) =>
-            `<li><strong>${escapeHtml(item.park)}</strong><span>${escapeHtml(item.city)} · ${item.distance} mi · ${item.weekends} weekend${item.weekends === 1 ? "" : "s"}</span></li>`,
+            `<li><strong>${escapeHtml(item.park)}</strong><span>${escapeHtml(item.city)} · ${escapeHtml(item.distance)} · ${item.weekends} weekend${item.weekends === 1 ? "" : "s"}</span></li>`,
         )
         .join("")}
     </ol>
@@ -887,6 +957,39 @@ function directionsUrl(item) {
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
 }
 
+async function withRouteEstimate(item) {
+  const key = `${state.origin.lat.toFixed(4)},${state.origin.lon.toFixed(4)}|${item.lat},${item.lon}`;
+  if (routeCache.has(key)) {
+    return { ...item, ...routeCache.get(key) };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 3500);
+    const url = new URL(
+      `https://router.project-osrm.org/route/v1/driving/${state.origin.lon},${state.origin.lat};${item.lon},${item.lat}`,
+    );
+    url.searchParams.set("overview", "false");
+    url.searchParams.set("alternatives", "false");
+    url.searchParams.set("steps", "false");
+    const response = await fetch(url.toString(), { signal: controller.signal });
+    window.clearTimeout(timeout);
+    if (!response.ok) throw new Error("route failed");
+    const data = await response.json();
+    const route = data.routes?.[0];
+    if (!route) throw new Error("route missing");
+    const estimate = {
+      driveDistanceMiles: route.distance / 1609.34,
+      driveDurationMinutes: route.duration / 60,
+    };
+    routeCache.set(key, estimate);
+    return { ...item, ...estimate };
+  } catch {
+    routeCache.set(key, {});
+    return item;
+  }
+}
+
 function distanceMiles(origin, item) {
   const radians = Math.PI / 180;
   const dlat = (item.lat - origin.lat) * radians;
@@ -895,6 +998,28 @@ function distanceMiles(origin, item) {
     Math.sin(dlat / 2) ** 2 +
     Math.cos(origin.lat * radians) * Math.cos(item.lat * radians) * Math.sin(dlon / 2) ** 2;
   return 3958.8 * 2 * Math.asin(Math.sqrt(a));
+}
+
+function distanceValueMiles(item) {
+  return item.driveDistanceMiles ?? item.airDistanceMiles;
+}
+
+function sortDistance(item) {
+  return distanceMode.value === "hours" ? item.driveDurationMinutes ?? item.airDistanceMiles * 2 : distanceValueMiles(item);
+}
+
+function distanceText(item) {
+  if (item.driveDistanceMiles && item.driveDurationMinutes) {
+    return `${Math.round(item.driveDistanceMiles)} drive mi · ${formatDuration(item.driveDurationMinutes)}`;
+  }
+  return `${Math.round(item.airDistanceMiles)} mi straight-line`;
+}
+
+function formatDuration(minutes) {
+  if (minutes < 60) return `${Math.round(minutes)} min`;
+  const hours = Math.floor(minutes / 60);
+  const remaining = Math.round(minutes % 60);
+  return remaining ? `${hours} hr ${remaining} min` : `${hours} hr`;
 }
 
 function reservationUrl(item, site = null) {
