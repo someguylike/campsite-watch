@@ -88,6 +88,12 @@ class ApiHandler(BaseHTTPRequestHandler):
             return
 
         query = parse_qs(parsed_url.query)
+        _write_refresh_status(
+            _refresh_status_path(self.results_path),
+            "queued",
+            "Refresh accepted. Waiting for the NAS worker to start.",
+            _requested_months(query),
+        )
         thread = threading.Thread(target=self._run_refresh, args=(query,), daemon=True)
         thread.start()
         self._send_json(202, self._refresh_status() | {"accepted": True})
@@ -348,7 +354,9 @@ def _write_refresh_status(path: Path, status: str, message: str, requested_month
         "updatedAt": datetime.now(timezone.utc).isoformat(),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    temp_path = path.with_suffix(f"{path.suffix}.tmp")
+    temp_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    temp_path.replace(path)
 
 
 def _looks_blocked(text: str) -> bool:
