@@ -94,10 +94,10 @@ python -m pip install -e '.[browser]'
 python -m playwright install --with-deps chromium
 ```
 
-Start the local API. Keep it bound to localhost; Tailscale Serve will provide tailnet HTTPS:
+Start the local API. Keep it bound to localhost; Tailscale Serve will provide tailnet HTTPS. Set a shared NAS password so the public GitHub Pages frontend can query only when a trusted user enters it:
 
 ```bash
-export CAMPSITE_WATCH_API_TOKEN="$(openssl rand -base64 32)"
+export CAMPSITE_WATCH_API_PASSWORD="choose-a-private-password"
 campsite-watch \
   --serve-api \
   --api-host 127.0.0.1 \
@@ -112,13 +112,15 @@ sudo tailscale serve --bg --https=443 http://127.0.0.1:8787
 tailscale serve status
 ```
 
-The website refresh button lets you set the private Tailscale NAS URL and access token, for example:
+The website defaults to your private Tailscale NAS URL. The `Connect NAS` button lets you override it if needed:
 
 ```text
 https://<nas-device>.<tailnet-name>.ts.net
 ```
 
 Do not use `tailscale funnel` for this API unless you intentionally want public internet exposure. Prefer Tailscale ACLs that allow only your trusted users/devices to reach the NAS service.
+
+When a user searches, the website asks for the NAS password and sends it only with that browser request. Do not put the password in the public frontend source.
 
 The API contract is:
 

@@ -77,7 +77,10 @@ class ApiHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", cors_origin)
             self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization, X-Campsite-Watch-Token")
+        self.send_header(
+            "Access-Control-Allow-Headers",
+            "Content-Type, Accept, Authorization, X-Campsite-Watch-Password, X-Campsite-Watch-Token",
+        )
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(content_length))
@@ -91,7 +94,12 @@ class ApiHandler(BaseHTTPRequestHandler):
         prefix = "Bearer "
         bearer = auth[len(prefix) :] if auth.startswith(prefix) else ""
         header_token = self.headers.get("X-Campsite-Watch-Token", "")
-        return compare_digest(bearer, self.api_token) or compare_digest(header_token, self.api_token)
+        header_password = self.headers.get("X-Campsite-Watch-Password", "")
+        return (
+            compare_digest(bearer, self.api_token)
+            or compare_digest(header_password, self.api_token)
+            or compare_digest(header_token, self.api_token)
+        )
 
     def _origin_allowed(self) -> bool:
         origin = self.headers.get("Origin")
@@ -121,9 +129,13 @@ def main() -> None:
     parser.add_argument("--port", default=8787, type=int)
     parser.add_argument("--results", default="./data/latest-results.json", type=Path)
     parser.add_argument("--allowed-origin", default="*")
-    parser.add_argument("--api-token", default=os.environ.get("CAMPSITE_WATCH_API_TOKEN", ""))
+    parser.add_argument(
+        "--api-password",
+        default=os.environ.get("CAMPSITE_WATCH_API_PASSWORD", os.environ.get("CAMPSITE_WATCH_API_TOKEN", "")),
+    )
+    parser.add_argument("--api-token", default="")
     args = parser.parse_args()
-    serve_api(args.host, args.port, args.results, args.allowed_origin, args.api_token)
+    serve_api(args.host, args.port, args.results, args.allowed_origin, args.api_password or args.api_token)
 
 
 if __name__ == "__main__":

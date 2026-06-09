@@ -89,7 +89,12 @@ def main() -> None:
     parser.add_argument("--api-port", default=8787, type=int)
     parser.add_argument("--results-json", default="./data/latest-results.json", type=Path)
     parser.add_argument("--allowed-origin", default="*")
-    parser.add_argument("--api-token", default=os.environ.get("CAMPSITE_WATCH_API_TOKEN", ""))
+    parser.add_argument(
+        "--api-password",
+        default=os.environ.get("CAMPSITE_WATCH_API_PASSWORD", os.environ.get("CAMPSITE_WATCH_API_TOKEN", "")),
+        help="shared password required by the website before querying the NAS API",
+    )
+    parser.add_argument("--api-token", default="", help=argparse.SUPPRESS)
     parser.add_argument("--log-level", default="INFO")
     args = parser.parse_args()
 
@@ -100,7 +105,7 @@ def main() -> None:
         return
 
     if args.serve_api:
-        serve_api(args.api_host, args.api_port, args.results_json, args.allowed_origin, args.api_token)
+        serve_api(args.api_host, args.api_port, args.results_json, args.allowed_origin, args.api_password or args.api_token)
         return
 
     if args.once:

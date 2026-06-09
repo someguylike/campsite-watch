@@ -2,7 +2,7 @@ const ORIGIN = "98040";
 const ORIGIN_COORDS = [47.5707, -122.2221];
 const DEFAULT_API_BASE_URL = "https://nampham-server.tail74e1b3.ts.net";
 const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
-const API_TOKEN_STORAGE_KEY = "campsite-watch.apiToken";
+const API_PASSWORD_STORAGE_KEY = "campsite-watch.apiPassword";
 
 const parks = {
   "Blake Island State Park": {
@@ -457,15 +457,11 @@ document.querySelector("#sync-button").addEventListener("click", () => {
   const trimmed = next.trim().replace(/\/+$/, "");
   if (trimmed) {
     window.localStorage.setItem(API_BASE_STORAGE_KEY, trimmed);
-    const currentToken = apiToken();
-    const token = window.prompt("NAS access token", currentToken ? "Saved token is set" : "");
-    if (token !== null && token.trim() && token !== "Saved token is set") {
-      window.localStorage.setItem(API_TOKEN_STORAGE_KEY, token.trim());
-    }
-    toast("NAS worker settings saved.");
+    window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
+    toast("NAS worker URL saved. Enter the NAS password when you search.");
   } else {
     window.localStorage.removeItem(API_BASE_STORAGE_KEY);
-    window.localStorage.removeItem(API_TOKEN_STORAGE_KEY);
+    window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
     toast("NAS worker disconnected.");
   }
   runSearch();
@@ -485,9 +481,18 @@ async function runSearch() {
 
   const apiBaseUrl = apiBase();
   const nasResult = apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
-  if (nasResult?.error === "unauthorized") {
-    state.results = prepareResults(availability);
-    searchNote.textContent = "NAS token is missing or invalid. Showing the saved website snapshot.";
+  if (nasResult?.error === "password_required") {
+    state.results = [];
+    searchNote.textContent = "Enter the NAS password to query fresh availability.";
+  } else if (nasResult?.error === "unauthorized") {
+    window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
+    const password = askForNasPassword();
+    if (password) {
+      window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
+      return runSearch();
+    }
+    state.results = [];
+    searchNote.textContent = "Enter the NAS password to query fresh availability.";
   } else if (nasResult) {
     state.results = prepareResults(nasResult.results);
     searchNote.textContent = nasResult.note;
@@ -531,11 +536,12 @@ async function fetchNasResults(apiBaseUrl) {
   try {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 8000);
-    const token = apiToken();
+    const password = apiPassword() || askForNasPassword();
+    if (!password) return { error: "password_required" };
+    window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
     const headers = { Accept: "application/json" };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    headers.Authorization = `Bearer ${password}`;
+    headers["X-Campsite-Watch-Password"] = password;
     const response = await fetch(url.toString(), { headers, signal: controller.signal });
     window.clearTimeout(timeout);
     if (response.status === 401) return { error: "unauthorized" };
@@ -729,8 +735,12 @@ function apiBase() {
   return window.localStorage.getItem(API_BASE_STORAGE_KEY) || window.CAMPSITE_WATCH_API_BASE_URL || DEFAULT_API_BASE_URL;
 }
 
-function apiToken() {
-  return window.localStorage.getItem(API_TOKEN_STORAGE_KEY) || "";
+function apiPassword() {
+  return window.sessionStorage.getItem(API_PASSWORD_STORAGE_KEY) || "";
+}
+
+function askForNasPassword() {
+  return window.prompt("NAS password")?.trim() || "";
 }
 
 function formatDateTime(value) {

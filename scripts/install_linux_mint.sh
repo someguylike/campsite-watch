@@ -52,11 +52,13 @@ if [ ! -f "${APP_DIR}/data/latest-results.json" ]; then
   cp "${APP_DIR}/examples/latest-results.example.json" "${APP_DIR}/data/latest-results.json"
 fi
 
-if [ -f "${ENV_FILE}" ] && sudo grep -q '^CAMPSITE_WATCH_API_TOKEN=' "${ENV_FILE}"; then
-  TOKEN="$(sudo sed -n 's/^CAMPSITE_WATCH_API_TOKEN=//p' "${ENV_FILE}" | head -1)"
+if [ -f "${ENV_FILE}" ] && sudo grep -q '^CAMPSITE_WATCH_API_PASSWORD=' "${ENV_FILE}"; then
+  PASSWORD="$(sudo sed -n 's/^CAMPSITE_WATCH_API_PASSWORD=//p' "${ENV_FILE}" | head -1)"
+elif [ -f "${ENV_FILE}" ] && sudo grep -q '^CAMPSITE_WATCH_API_TOKEN=' "${ENV_FILE}"; then
+  PASSWORD="$(sudo sed -n 's/^CAMPSITE_WATCH_API_TOKEN=//p' "${ENV_FILE}" | head -1)"
 else
-  TOKEN="$(openssl rand -base64 32)"
-  printf 'CAMPSITE_WATCH_API_TOKEN=%s\n' "${TOKEN}" | sudo tee "${ENV_FILE}" >/dev/null
+  PASSWORD="$(openssl rand -base64 24)"
+  printf 'CAMPSITE_WATCH_API_PASSWORD=%s\n' "${PASSWORD}" | sudo tee "${ENV_FILE}" >/dev/null
   sudo chmod 600 "${ENV_FILE}"
 fi
 
@@ -103,12 +105,12 @@ cat <<EOF
 
 Install complete.
 
-API token:
-${TOKEN}
+NAS password:
+${PASSWORD}
 
 Use this in the website refresh/NAS setup prompt:
-  URL:   https://<nas-device>.<tailnet-name>.ts.net
-  Token: ${TOKEN}
+  URL:      https://<nas-device>.<tailnet-name>.ts.net
+  Password: ${PASSWORD}
 
 Service commands:
   sudo systemctl status ${SERVICE_NAME}
