@@ -1,5 +1,6 @@
 const ORIGIN = "98040";
 const ORIGIN_COORDS = [47.5707, -122.2221];
+const DEFAULT_API_BASE_URL = "https://nampham-server.tail74e1b3.ts.net";
 const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
 const API_TOKEN_STORAGE_KEY = "campsite-watch.apiToken";
 
@@ -450,7 +451,7 @@ clearSavedWatchButton.addEventListener("click", () => {
 
 document.querySelector("#sync-button").addEventListener("click", () => {
   const current = apiBase();
-  const next = window.prompt("Private Tailscale NAS URL", current || "https://your-nas.your-tailnet.ts.net");
+  const next = window.prompt("Private Tailscale NAS URL", current || DEFAULT_API_BASE_URL);
   if (next === null) return;
 
   const trimmed = next.trim().replace(/\/+$/, "");
@@ -528,12 +529,15 @@ async function fetchNasResults(apiBaseUrl) {
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8000);
     const token = apiToken();
     const headers = { Accept: "application/json" };
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
-    const response = await fetch(url.toString(), { headers });
+    const response = await fetch(url.toString(), { headers, signal: controller.signal });
+    window.clearTimeout(timeout);
     if (response.status === 401) return { error: "unauthorized" };
     if (!response.ok) return null;
     const payload = await response.json();
@@ -722,7 +726,7 @@ function driveTimeLabel(value) {
 }
 
 function apiBase() {
-  return window.localStorage.getItem(API_BASE_STORAGE_KEY) || window.CAMPSITE_WATCH_API_BASE_URL || "";
+  return window.localStorage.getItem(API_BASE_STORAGE_KEY) || window.CAMPSITE_WATCH_API_BASE_URL || DEFAULT_API_BASE_URL;
 }
 
 function apiToken() {
