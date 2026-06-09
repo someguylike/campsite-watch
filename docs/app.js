@@ -1,4 +1,5 @@
 const ORIGIN = "98040";
+const ORIGIN_COORDS = [47.5707, -122.2221];
 
 const parks = {
   "Blake Island State Park": {
@@ -6,15 +7,27 @@ const parks = {
     zip: "98353",
     lat: 47.54247,
     lon: -122.4834,
+    distanceMiles: 12,
     resourceLocationId: -2147483640,
     transactionLocationId: -2147483641,
     mapId: -2147483404,
+  },
+  "Saltwater State Park": {
+    city: "Des Moines",
+    zip: "98198",
+    lat: 47.37473,
+    lon: -122.321,
+    distanceMiles: 14,
+    resourceLocationId: -2147483561,
+    transactionLocationId: -2147483585,
+    mapId: -2147483419,
   },
   "Manchester State Park": {
     city: "Port Orchard",
     zip: "98366",
     lat: 47.57732,
     lon: -122.5563,
+    distanceMiles: 16,
     resourceLocationId: -2147483589,
     transactionLocationId: -2147483603,
     mapId: -2147483371,
@@ -24,6 +37,7 @@ const parks = {
     zip: "98310",
     lat: 47.59558,
     lon: -122.5974,
+    distanceMiles: 18,
     resourceLocationId: -2147483607,
     transactionLocationId: -2147483616,
     mapId: -2147483380,
@@ -33,6 +47,7 @@ const parks = {
     zip: "98023",
     lat: 47.31779,
     lon: -122.4071,
+    distanceMiles: 19,
     resourceLocationId: -2147483625,
     transactionLocationId: -2147483631,
     mapId: -2147483389,
@@ -42,6 +57,7 @@ const parks = {
     zip: "98051",
     lat: 47.31198,
     lon: -121.8987,
+    distanceMiles: 23,
     resourceLocationId: -2147483601,
     transactionLocationId: -2147483614,
     mapId: -2147483379,
@@ -51,6 +67,7 @@ const parks = {
     zip: "98370",
     lat: 47.81642,
     lon: -122.6444,
+    distanceMiles: 26,
     resourceLocationId: -2147483600,
     transactionLocationId: -2147483613,
     mapId: -2147483378,
@@ -60,6 +77,7 @@ const parks = {
     zip: "98380",
     lat: 47.64626,
     lon: -122.8469,
+    distanceMiles: 30,
     resourceLocationId: -2147483560,
     transactionLocationId: -2147483584,
     mapId: -2147483359,
@@ -69,9 +87,20 @@ const parks = {
     zip: "98528",
     lat: 47.43167,
     lon: -122.877,
+    distanceMiles: 32,
     resourceLocationId: -2147483643,
     transactionLocationId: -2147483643,
     mapId: -2147483319,
+  },
+  "Wallace Falls State Park": {
+    city: "Gold Bar",
+    zip: "98251",
+    lat: 47.86565,
+    lon: -121.68,
+    distanceMiles: 32,
+    resourceLocationId: -2147483545,
+    transactionLocationId: -2147483572,
+    mapId: -2147483351,
   },
 };
 
@@ -303,6 +332,25 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 }).addTo(map);
 
+L.circle(ORIGIN_COORDS, {
+  radius: 48280,
+  color: "#1f4e79",
+  fillOpacity: 0,
+  opacity: 0.24,
+  weight: 2,
+}).addTo(map);
+
+L.marker(ORIGIN_COORDS, {
+  icon: L.divIcon({
+    className: "",
+    html: `<div class="origin-marker">${ORIGIN}</div>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  }),
+})
+  .bindPopup(`<div class="popup-title">Origin ZIP ${ORIGIN}</div><div class="popup-copy">Distances are estimated from Mercer Island.</div>`)
+  .addTo(map);
+
 const markers = new Map();
 const resultsEl = document.querySelector("#results");
 const visibleCountEl = document.querySelector("#visible-count");
@@ -312,11 +360,35 @@ document.querySelector("#search-input").addEventListener("input", (event) => {
   render();
 });
 
+const monthSelect = document.querySelector("#month-select");
+const monthButton = document.querySelector("#month-select-button");
+const monthOptions = document.querySelector("#month-options");
+const monthLabel = document.querySelector("#month-select-label");
+
+monthButton.addEventListener("click", () => {
+  const isOpen = monthButton.getAttribute("aria-expanded") === "true";
+  setMonthDropdownOpen(!isOpen);
+});
+
+document.addEventListener("click", (event) => {
+  if (!monthSelect.contains(event.target)) {
+    setMonthDropdownOpen(false);
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setMonthDropdownOpen(false);
+    monthButton.focus();
+  }
+});
+
 document.querySelectorAll("input[name='month']").forEach((input) => {
   input.addEventListener("change", () => {
     state.months = new Set(
       [...document.querySelectorAll("input[name='month']:checked")].map((node) => node.value),
     );
+    updateMonthLabel();
     render();
   });
 });
@@ -351,6 +423,18 @@ function render() {
   visibleCountEl.textContent = String(items.length);
   renderResults(items);
   renderMarkers(items);
+}
+
+function setMonthDropdownOpen(isOpen) {
+  monthButton.setAttribute("aria-expanded", String(isOpen));
+  monthOptions.hidden = !isOpen;
+}
+
+function updateMonthLabel() {
+  const selected = [...document.querySelectorAll("input[name='month']:checked")].map((node) =>
+    node.parentElement.textContent.trim().slice(0, 3),
+  );
+  monthLabel.textContent = selected.length ? selected.join(", ") : "All months";
 }
 
 function matchesFilters(item) {
@@ -423,30 +507,45 @@ function renderMarkers(items) {
     }
   }
 
-  byPark.forEach((item, parkName) => {
-    const marker = L.circleMarker([item.lat, item.lon], {
-      radius: markerSize(item.availableTentSites),
+  Object.entries(parks).forEach(([parkName, park]) => {
+    const item = byPark.get(parkName);
+    const hasMatches = Boolean(item);
+    const marker = L.circleMarker([park.lat, park.lon], {
+      radius: hasMatches ? markerSize(item.availableTentSites) : 7,
       color: "#0f5258",
-      fillColor: "#28a06a",
-      fillOpacity: 0.78,
-      weight: 2,
+      fillColor: hasMatches ? "#28a06a" : "#9aa8b1",
+      fillOpacity: hasMatches ? 0.82 : 0.5,
+      weight: hasMatches ? 2 : 1,
     }).addTo(map);
 
-    marker.bindPopup(`
-      <div class="popup-title">${escapeHtml(parkName)}</div>
-      <div class="popup-copy">${item.availableTentSites} tent sites · ${formatDate(item.date)}-${formatDate(item.end)}</div>
-      <div class="link-group">
-        <a class="directions-link reserve-link" href="${reservationUrl(item)}" target="_blank" rel="noreferrer">Reserve</a>
-        <a class="directions-link" href="${directionsUrl(item)}" target="_blank" rel="noreferrer">Directions</a>
-      </div>
-    `);
+    marker.bindPopup(popupHtml(parkName, park, item));
     markers.set(parkName, marker);
   });
 
-  const bounds = [...markers.values()].map((marker) => marker.getLatLng());
-  if (bounds.length) {
-    map.fitBounds(bounds, { padding: [36, 36], maxZoom: 10 });
+  const bounds = [L.latLng(...ORIGIN_COORDS), ...[...markers.values()].map((marker) => marker.getLatLng())];
+  map.fitBounds(bounds, { padding: [36, 36], maxZoom: 10 });
+}
+
+function popupHtml(parkName, park, item) {
+  if (!item) {
+    return `
+      <div class="popup-title">${escapeHtml(parkName)}</div>
+      <div class="popup-copy">${escapeHtml(park.city)}, ${escapeHtml(park.zip)} · ${park.distanceMiles} mi from ${ORIGIN}</div>
+      <div class="popup-copy">No matching availability under the current filters.</div>
+      <div class="link-group">
+        <a class="directions-link" href="${directionsUrl(parkName, park)}" target="_blank" rel="noreferrer">Directions</a>
+      </div>
+    `;
   }
+
+  return `
+    <div class="popup-title">${escapeHtml(parkName)}</div>
+    <div class="popup-copy">${item.availableTentSites} tent sites · ${formatDate(item.date)}-${formatDate(item.end)} · ${item.distanceMiles} mi from ${ORIGIN}</div>
+    <div class="link-group">
+      <a class="directions-link reserve-link" href="${reservationUrl(item)}" target="_blank" rel="noreferrer">Reserve</a>
+      <a class="directions-link" href="${directionsUrl(parkName, park)}" target="_blank" rel="noreferrer">Directions</a>
+    </div>
+  `;
 }
 
 function markerSize(count) {
@@ -463,8 +562,9 @@ function focusPark(parkName) {
   map.panTo(marker.getLatLng());
 }
 
-function directionsUrl(item) {
-  const destination = encodeURIComponent(`${item.park}, ${item.city}, WA ${item.zip}`);
+function directionsUrl(parkNameOrItem, parkData = parkNameOrItem) {
+  const parkName = typeof parkNameOrItem === "string" ? parkNameOrItem : parkNameOrItem.park;
+  const destination = encodeURIComponent(`${parkName}, ${parkData.city}, WA ${parkData.zip}`);
   return `https://www.google.com/maps/dir/?api=1&origin=${ORIGIN}&destination=${destination}`;
 }
 

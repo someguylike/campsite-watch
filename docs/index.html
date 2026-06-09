@@ -34,7 +34,8 @@
         <div class="map-toolbar" aria-label="Map summary">
           <div>
             <strong id="visible-count">0</strong>
-            <span>available weekends</span>
+            <span>matching weekends</span>
+            <small id="map-scope">98040 origin · all monitored parks shown</small>
           </div>
           <a
             id="all-directions"
@@ -59,13 +60,25 @@
 
           <fieldset class="field month-field">
             <legend>Months</legend>
-            <div class="month-options" aria-label="Months to include">
-              <label><input type="checkbox" name="month" value="2026-07" checked /> Jul</label>
-              <label><input type="checkbox" name="month" value="2026-08" checked /> Aug</label>
-              <label><input type="checkbox" name="month" value="2026-09" checked /> Sep</label>
-              <label><input type="checkbox" name="month" value="2026-10" /> Oct</label>
-              <label><input type="checkbox" name="month" value="2026-11" /> Nov</label>
-              <label><input type="checkbox" name="month" value="2026-12" /> Dec</label>
+            <div class="multi-select" id="month-select">
+              <button
+                id="month-select-button"
+                class="multi-select-button"
+                type="button"
+                aria-expanded="false"
+                aria-controls="month-options"
+              >
+                <span id="month-select-label">Jul, Aug, Sep</span>
+                <span aria-hidden="true">▾</span>
+              </button>
+              <div id="month-options" class="month-options" aria-label="Months to include" hidden>
+                <label><input type="checkbox" name="month" value="2026-07" checked /> July</label>
+                <label><input type="checkbox" name="month" value="2026-08" checked /> August</label>
+                <label><input type="checkbox" name="month" value="2026-09" checked /> September</label>
+                <label><input type="checkbox" name="month" value="2026-10" /> October</label>
+                <label><input type="checkbox" name="month" value="2026-11" /> November</label>
+                <label><input type="checkbox" name="month" value="2026-12" /> December</label>
+              </div>
             </div>
           </fieldset>
 
@@ -82,14 +95,17 @@
             </label>
           </div>
 
-          <div class="segmented" aria-label="Availability density">
-            <input id="density-any" name="density" type="radio" value="1" checked />
-            <label for="density-any">Any</label>
-            <input id="density-five" name="density" type="radio" value="5" />
-            <label for="density-five">5+</label>
-            <input id="density-twenty" name="density" type="radio" value="20" />
-            <label for="density-twenty">20+</label>
-          </div>
+          <fieldset class="field">
+            <legend>Minimum available sites</legend>
+            <div class="segmented" aria-label="Minimum available sites">
+              <input id="density-any" name="density" type="radio" value="1" checked />
+              <label for="density-any">1+ sites</label>
+              <input id="density-five" name="density" type="radio" value="5" />
+              <label for="density-five">5+ sites</label>
+              <input id="density-twenty" name="density" type="radio" value="20" />
+              <label for="density-twenty">20+ sites</label>
+            </div>
+          </fieldset>
         </form>
 
         <section class="watch-card" aria-labelledby="watch-title">
