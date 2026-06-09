@@ -126,6 +126,8 @@ The API contract is:
 
 ```text
 GET /api/search?zip=98040&people=4&distance=80&distanceMode=miles&month=2026-08
+POST /api/refresh?zip=98040&people=4&distance=240&distanceMode=hours&month=2026-11
+GET /api/refresh-status
 ```
 
 Response:
@@ -142,6 +144,8 @@ Response:
 ```
 
 If live checks are blocked, return `source: "fallback"` with the latest saved results and a `lastChecked` timestamp. The API also reports which months the saved file covers, so the website can distinguish "not checked yet" from "checked and no campsites found."
+
+The refresh endpoint is frontend-triggerable, but it still obeys the reservation site's bot protection. If the NAS receives an Azure WAF/captcha response, refresh status becomes `blocked` and the saved results are left unchanged.
 
 ## Configuration Notes
 

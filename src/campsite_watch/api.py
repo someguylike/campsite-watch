@@ -1,18 +1,23 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
 from secrets import compare_digest
+import threading
 from urllib.parse import parse_qs, urlparse
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 
 class ApiHandler(BaseHTTPRequestHandler):
     results_path = Path("./data/latest-results.json")
     allowed_origin = "*"
     api_token = ""
+    refresh_lock = threading.Lock()
 
     def do_OPTIONS(self) -> None:
         if not self._origin_allowed():
@@ -29,6 +34,13 @@ class ApiHandler(BaseHTTPRequestHandler):
         path = parsed_url.path
         if path == "/healthz":
             self._send_json(200, {"ok": True})
+            return
+
+        if path == "/api/refresh-status":
+            if not self._authorized():
+                self._send_json(401, {"error": "unauthorized"})
+                return
+            self._send_json(200, self._refresh_status())
             return
 
         if path != "/api/search":
@@ -57,6 +69,29 @@ class ApiHandler(BaseHTTPRequestHandler):
         payload.setdefault("source", "fallback")
         self._send_json(200, payload)
 
+    def do_POST(self) -> None:
+        if not self._origin_allowed():
+            self._send_json(403, {"error": "origin_not_allowed"})
+            return
+
+        parsed_url = urlparse(self.path)
+        if parsed_url.path != "/api/refresh":
+            self._send_json(404, {"error": "not_found"})
+            return
+
+        if not self._authorized():
+            self._send_json(401, {"error": "unauthorized"})
+            return
+
+        if not self.refresh_lock.acquire(blocking=False):
+            self._send_json(202, self._refresh_status() | {"accepted": False})
+            return
+
+        query = parse_qs(parsed_url.query)
+        thread = threading.Thread(target=self._run_refresh, args=(query,), daemon=True)
+        thread.start()
+        self._send_json(202, self._refresh_status() | {"accepted": True})
+
     def log_message(self, format: str, *args: object) -> None:
         return
 
@@ -78,7 +113,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         if cors_origin:
             self.send_header("Access-Control-Allow-Origin", cors_origin)
             self.send_header("Vary", "Origin")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header(
             "Access-Control-Allow-Headers",
             "Content-Type, Accept, Authorization, X-Campsite-Watch-Password, X-Campsite-Watch-Token",
@@ -129,6 +164,71 @@ class ApiHandler(BaseHTTPRequestHandler):
             else "checked"
         )
         return response
+
+    def _refresh_status(self) -> dict[str, object]:
+        status_path = _refresh_status_path(self.results_path)
+        if not status_path.exists():
+            return {"status": "idle", "message": "No refresh has been triggered yet."}
+        try:
+            payload = json.loads(status_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            return {"status": "error", "message": f"Could not read refresh status: {error}"}
+        return payload if isinstance(payload, dict) else {"status": "error", "message": "Bad refresh status file."}
+
+    def _run_refresh(self, query: dict[str, list[str]]) -> None:
+        status_path = _refresh_status_path(self.results_path)
+        requested_months = _requested_months(query)
+        _write_refresh_status(
+            status_path,
+            "running",
+            "Refresh started. Contacting the reservation site from the NAS.",
+            requested_months,
+        )
+        try:
+            request = Request(
+                "https://washington.goingtocamp.com/create-booking/results",
+                headers={
+                    "Accept": "text/html,application/xhtml+xml",
+                    "User-Agent": (
+                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                        "(KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+                    ),
+                },
+            )
+            with urlopen(request, timeout=45) as response:
+                body = response.read(1_000_000).decode("utf-8", errors="replace").lower()
+        except HTTPError as error:
+            if error.code in {401, 403, 429}:
+                _write_refresh_status(
+                    status_path,
+                    "blocked",
+                    f"Reservation site blocked the NAS refresh with HTTP {error.code}. Browser-based refresh is required.",
+                    requested_months,
+                )
+            else:
+                _write_refresh_status(status_path, "error", f"Reservation site returned HTTP {error.code}.", requested_months)
+            self.refresh_lock.release()
+            return
+        except (TimeoutError, URLError, OSError) as error:
+            _write_refresh_status(status_path, "error", f"Refresh request failed: {error}", requested_months)
+            self.refresh_lock.release()
+            return
+
+        if _looks_blocked(body):
+            _write_refresh_status(
+                status_path,
+                "blocked",
+                "Reservation site returned a bot-protection challenge. Browser-based refresh is required.",
+                requested_months,
+            )
+        else:
+            _write_refresh_status(
+                status_path,
+                "unsupported",
+                "NAS reached the reservation site, but detailed campsite extraction is not implemented for this page yet.",
+                requested_months,
+            )
+        self.refresh_lock.release()
 
 
 def _first(query: dict[str, list[str]], key: str, default: str = "") -> str:
@@ -234,6 +334,31 @@ def _drive_minutes_to_miles(minutes: float) -> float:
     if minutes <= 180:
         return 110
     return 150
+
+
+def _refresh_status_path(results_path: Path) -> Path:
+    return results_path.with_name("refresh-status.json")
+
+
+def _write_refresh_status(path: Path, status: str, message: str, requested_months: list[str]) -> None:
+    payload = {
+        "status": status,
+        "message": message,
+        "requestedMonths": requested_months,
+        "updatedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _looks_blocked(text: str) -> bool:
+    return (
+        "azure" in text
+        and "waf" in text
+        or "captcha" in text
+        or "challenge" in text
+        or "access denied" in text
+    )
 
 
 def serve_api(host: str, port: int, results_path: Path, allowed_origin: str, api_token: str = "") -> None:

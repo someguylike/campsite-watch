@@ -357,6 +357,7 @@ const startDateInput = document.querySelector("#start-date-input");
 const endDateInput = document.querySelector("#end-date-input");
 const monthFilter = document.querySelector("#month-filter");
 const searchNote = document.querySelector("#search-note");
+const refreshButton = document.querySelector("#refresh-button");
 
 populateDateFilters();
 populateDistanceOptions();
@@ -364,6 +365,10 @@ populateDistanceOptions();
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await runSearch();
+});
+
+refreshButton.addEventListener("click", async () => {
+  await triggerRefresh();
 });
 
 distanceMode.addEventListener("change", populateDistanceOptions);
@@ -441,20 +446,7 @@ document.querySelector("#sync-button")?.addEventListener("click", () => {
 });
 
 async function runSearch() {
-  const zip = zipInput.value.trim();
-  state.maxDistance = selectedDistanceMiles();
-  state.maxDriveMinutes = selectedDriveMinutes();
-  state.partySize = Number(partySizeInput.value);
-  const selectedRange = normalizedSelectedDateRange();
-  state.startDate = selectedRange.start;
-  state.endDate = selectedRange.end;
-  state.month = monthFilter.value;
-
-  if (zip) {
-    state.origin = await resolveOrigin(zip);
-    state.originQuery = zip;
-  }
-
+  await syncStateFromInputs();
   const apiBaseUrl = apiBase();
   const nasResult = apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
   if (nasResult?.error === "password_required") {
@@ -484,6 +476,59 @@ async function runSearch() {
   }
 
   renderResults(state.results);
+}
+
+async function syncStateFromInputs() {
+  const zip = zipInput.value.trim();
+  state.maxDistance = selectedDistanceMiles();
+  state.maxDriveMinutes = selectedDriveMinutes();
+  state.partySize = Number(partySizeInput.value);
+  const selectedRange = normalizedSelectedDateRange();
+  state.startDate = selectedRange.start;
+  state.endDate = selectedRange.end;
+  state.month = monthFilter.value;
+
+  if (zip) {
+    state.origin = await resolveOrigin(zip);
+    state.originQuery = zip;
+  }
+}
+
+async function triggerRefresh() {
+  await syncStateFromInputs();
+  const apiBaseUrl = apiBase();
+  if (!apiBaseUrl) {
+    searchNote.textContent = "NAS worker URL is not configured.";
+    return;
+  }
+
+  refreshButton.disabled = true;
+  refreshButton.textContent = "Refreshing...";
+  searchNote.textContent = "Asking the NAS to refresh campsite data.";
+
+  const result = await postNasRefresh(apiBaseUrl);
+  if (result?.error === "password_required") {
+    searchNote.textContent = "Enter the NAS password to refresh availability.";
+  } else if (result?.error === "unauthorized") {
+    window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
+    const password = askForNasPassword();
+    if (password) {
+      window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
+      refreshButton.disabled = false;
+      refreshButton.textContent = "Refresh NAS data";
+      return triggerRefresh();
+    }
+    searchNote.textContent = "Enter the NAS password to refresh availability.";
+  } else if (result) {
+    searchNote.textContent = refreshMessage(result);
+    await pollRefreshStatus(apiBaseUrl);
+    await runSearch();
+  } else {
+    searchNote.textContent = "NAS refresh could not be started.";
+  }
+
+  refreshButton.disabled = false;
+  refreshButton.textContent = "Refresh NAS data";
 }
 
 async function prepareResults(items, checkedMonths = null) {
@@ -522,20 +567,7 @@ function isAdaOnlySite(park, site) {
 }
 
 async function fetchNasResults(apiBaseUrl) {
-  const url = new URL("/api/search", apiBaseUrl);
-  const windowRange = searchWindow();
-  url.searchParams.set("zip", zipInput.value.trim() || ORIGIN);
-  url.searchParams.set("people", String(state.partySize));
-  url.searchParams.set("distanceMode", distanceMode.value);
-  url.searchParams.set("distance", distanceMode.value === "hours" ? String(state.maxDriveMinutes) : String(state.maxDistance));
-  url.searchParams.set("windowStart", windowRange.start);
-  url.searchParams.set("windowEnd", windowRange.end);
-  if (state.startDate || state.endDate) {
-    url.searchParams.set("startDate", state.startDate || state.endDate);
-    url.searchParams.set("endDate", state.endDate || state.startDate);
-  } else if (state.month !== "any") {
-    url.searchParams.set("month", state.month);
-  }
+  const url = nasUrl(apiBaseUrl, "/api/search");
 
   try {
     const controller = new AbortController();
@@ -570,6 +602,74 @@ async function fetchNasResults(apiBaseUrl) {
   } catch {
     return null;
   }
+}
+
+async function postNasRefresh(apiBaseUrl) {
+  const url = nasUrl(apiBaseUrl, "/api/refresh");
+  return fetchNasJson(url, { method: "POST" });
+}
+
+async function fetchRefreshStatus(apiBaseUrl) {
+  return fetchNasJson(nasUrl(apiBaseUrl, "/api/refresh-status"));
+}
+
+async function fetchNasJson(url, options = {}) {
+  try {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8000);
+    const password = apiPassword() || askForNasPassword();
+    if (!password) return { error: "password_required" };
+    window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
+    const headers = { Accept: "application/json", ...(options.headers || {}) };
+    headers.Authorization = `Bearer ${password}`;
+    headers["X-Campsite-Watch-Password"] = password;
+    const response = await fetch(url.toString(), { ...options, headers, signal: controller.signal });
+    window.clearTimeout(timeout);
+    if (response.status === 401) return { error: "unauthorized" };
+    if (!response.ok) return null;
+    return response.json();
+  } catch {
+    return null;
+  }
+}
+
+function nasUrl(apiBaseUrl, path) {
+  const url = new URL(path, apiBaseUrl);
+  const windowRange = searchWindow();
+  url.searchParams.set("zip", zipInput.value.trim() || ORIGIN);
+  url.searchParams.set("people", String(state.partySize));
+  url.searchParams.set("distanceMode", distanceMode.value);
+  url.searchParams.set("distance", distanceMode.value === "hours" ? String(state.maxDriveMinutes) : String(state.maxDistance));
+  url.searchParams.set("windowStart", windowRange.start);
+  url.searchParams.set("windowEnd", windowRange.end);
+  if (state.startDate || state.endDate) {
+    url.searchParams.set("startDate", state.startDate || state.endDate);
+    url.searchParams.set("endDate", state.endDate || state.startDate);
+  } else if (state.month !== "any") {
+    url.searchParams.set("month", state.month);
+  }
+  return url;
+}
+
+async function pollRefreshStatus(apiBaseUrl) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    await sleep(1500);
+    const status = await fetchRefreshStatus(apiBaseUrl);
+    if (!status || status.error) return;
+    searchNote.textContent = refreshMessage(status);
+    if (status.status && status.status !== "running") return;
+  }
+}
+
+function refreshMessage(status) {
+  const months = Array.isArray(status.requestedMonths) && status.requestedMonths.length
+    ? ` (${status.requestedMonths.map(formatMonth).join(", ")})`
+    : "";
+  return `${status.message || "Refresh status updated."}${months}`;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 async function resolveOrigin(zip) {

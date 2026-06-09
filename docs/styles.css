@@ -308,6 +308,12 @@ button:disabled {
   opacity: 0.55;
 }
 
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
 .results {
   display: grid;
   gap: 12px;
@@ -429,7 +435,8 @@ button:disabled {
 
   .filter-grid,
   .result-header,
-  .card-actions {
+  .card-actions,
+  .button-row {
     align-items: stretch;
     flex-direction: column;
     grid-template-columns: 1fr;
