@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 from secrets import compare_digest
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 class ApiHandler(BaseHTTPRequestHandler):
@@ -25,7 +25,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             self._send_json(403, {"error": "origin_not_allowed"})
             return
 
-        path = urlparse(self.path).path
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
         if path == "/healthz":
             self._send_json(200, {"ok": True})
             return
@@ -52,6 +53,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             self._send_json(503, {"error": "bad_results", "detail": "expected object with results array"})
             return
 
+        payload = self._filtered_payload(payload, parse_qs(parsed_url.query))
         payload.setdefault("source", "fallback")
         self._send_json(200, payload)
 
@@ -110,6 +112,128 @@ class ApiHandler(BaseHTTPRequestHandler):
         if self.allowed_origin == "*":
             return origin if self.api_token and origin else "*"
         return origin if origin == self.allowed_origin else ""
+
+    def _filtered_payload(self, payload: dict[str, object], query: dict[str, list[str]]) -> dict[str, object]:
+        results = [item for item in payload.get("results", []) if isinstance(item, dict)]
+        checked_months = _months_in_results(results)
+        requested_months = _requested_months(query)
+        filtered = [item for item in results if _matches_query(item, query)]
+        response = dict(payload)
+        response["results"] = filtered
+        response["checkedMonths"] = checked_months
+        response["requestedMonths"] = requested_months
+        response["totalSavedResults"] = len(results)
+        response["coverageStatus"] = (
+            "not_checked"
+            if requested_months and not set(requested_months).issubset(set(checked_months))
+            else "checked"
+        )
+        return response
+
+
+def _first(query: dict[str, list[str]], key: str, default: str = "") -> str:
+    values = query.get(key)
+    return values[0] if values else default
+
+
+def _matches_query(item: dict[str, object], query: dict[str, list[str]]) -> bool:
+    item_start = str(item.get("date", ""))
+    item_end = str(item.get("end", item_start))
+    if not item_start:
+        return False
+
+    month = _first(query, "month")
+    start_date = _first(query, "startDate")
+    end_date = _first(query, "endDate")
+    window_start = _first(query, "windowStart")
+    window_end = _first(query, "windowEnd")
+    distance_mode = _first(query, "distanceMode", "miles")
+    distance = _as_float(_first(query, "distance"), 0)
+
+    if start_date or end_date:
+        selected_start = start_date or end_date
+        selected_end = end_date or start_date
+        if not (item_start <= selected_start and item_end >= selected_end):
+            return False
+    elif month and month != "any":
+        if not (item_start.startswith(month) or item_end.startswith(month)):
+            return False
+    elif window_start and window_end and not _ranges_overlap(item_start, item_end, window_start, window_end):
+        return False
+
+    if distance > 0:
+        if distance_mode == "hours":
+            minutes = _as_float(item.get("driveDurationMinutes"), 0)
+            if minutes and minutes > distance:
+                return False
+            if not minutes and _as_float(item.get("distanceMiles"), 0) > _drive_minutes_to_miles(distance):
+                return False
+        elif _as_float(item.get("distanceMiles"), 0) > distance:
+            return False
+
+    return True
+
+
+def _ranges_overlap(start_a: str, end_a: str, start_b: str, end_b: str) -> bool:
+    return start_a <= end_b and end_a >= start_b
+
+
+def _months_in_results(results: list[dict[str, object]]) -> list[str]:
+    months: set[str] = set()
+    for item in results:
+        for key in ("date", "end"):
+            value = str(item.get(key, ""))
+            if len(value) >= 7 and value[4:5] == "-":
+                months.add(value[:7])
+    return sorted(months)
+
+
+def _requested_months(query: dict[str, list[str]]) -> list[str]:
+    month = _first(query, "month")
+    if month and month != "any":
+        return [month]
+
+    start = _first(query, "startDate") or _first(query, "windowStart")
+    end = _first(query, "endDate") or _first(query, "windowEnd")
+    if not start or not end:
+        return []
+    return _months_between(start[:7], end[:7])
+
+
+def _months_between(start_month: str, end_month: str) -> list[str]:
+    try:
+        start_year, start_number = (int(part) for part in start_month.split("-", 1))
+        end_year, end_number = (int(part) for part in end_month.split("-", 1))
+    except ValueError:
+        return []
+
+    months = []
+    year = start_year
+    month = start_number
+    while (year, month) <= (end_year, end_number):
+        months.append(f"{year:04d}-{month:02d}")
+        month += 1
+        if month == 13:
+            year += 1
+            month = 1
+    return months
+
+
+def _as_float(value: object, default: float) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _drive_minutes_to_miles(minutes: float) -> float:
+    if minutes <= 60:
+        return 35
+    if minutes <= 120:
+        return 70
+    if minutes <= 180:
+        return 110
+    return 150
 
 
 def serve_api(host: str, port: int, results_path: Path, allowed_origin: str, api_token: str = "") -> None:

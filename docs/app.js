@@ -343,6 +343,7 @@ const state = {
   endDate: "",
   month: "any",
   dataMonths: [],
+  coverageStatus: "unknown",
   results: [],
 };
 
@@ -458,6 +459,7 @@ async function runSearch() {
   const nasResult = apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
   if (nasResult?.error === "password_required") {
     state.results = [];
+    state.coverageStatus = "unknown";
     searchNote.textContent = "Enter the NAS password to query fresh availability.";
   } else if (nasResult?.error === "unauthorized") {
     window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
@@ -467,11 +469,14 @@ async function runSearch() {
       return runSearch();
     }
     state.results = [];
+    state.coverageStatus = "unknown";
     searchNote.textContent = "Enter the NAS password to query fresh availability.";
   } else if (nasResult) {
-    state.results = await prepareResults(nasResult.results);
+    state.coverageStatus = nasResult.coverageStatus || "checked";
+    state.results = await prepareResults(nasResult.results, nasResult.checkedMonths);
     searchNote.textContent = nasResult.note;
   } else {
+    state.coverageStatus = "fallback";
     state.results = await prepareResults(availability);
     searchNote.textContent = apiBaseUrl
       ? "NAS worker is unavailable or blocked. Showing the latest saved website snapshot."
@@ -481,8 +486,8 @@ async function runSearch() {
   renderResults(state.results);
 }
 
-async function prepareResults(items) {
-  state.dataMonths = dataMonths(items);
+async function prepareResults(items, checkedMonths = null) {
+  state.dataMonths = Array.isArray(checkedMonths) && checkedMonths.length ? checkedMonths : dataMonths(items);
   const enriched = await Promise.all(
     items
       .map(withFilteredSites)
@@ -521,8 +526,8 @@ async function fetchNasResults(apiBaseUrl) {
   const windowRange = searchWindow();
   url.searchParams.set("zip", zipInput.value.trim() || ORIGIN);
   url.searchParams.set("people", String(state.partySize));
-  url.searchParams.set("distance", String(state.maxDistance));
   url.searchParams.set("distanceMode", distanceMode.value);
+  url.searchParams.set("distance", distanceMode.value === "hours" ? String(state.maxDriveMinutes) : String(state.maxDistance));
   url.searchParams.set("windowStart", windowRange.start);
   url.searchParams.set("windowEnd", windowRange.end);
   if (state.startDate || state.endDate) {
@@ -550,9 +555,17 @@ async function fetchNasResults(apiBaseUrl) {
 
     const source = payload.source === "live" ? "Live NAS result" : "Saved NAS fallback";
     const checked = payload.lastChecked ? ` · last checked ${formatDateTime(payload.lastChecked)}` : "";
+    const checkedMonths = Array.isArray(payload.checkedMonths) ? payload.checkedMonths : dataMonths(payload.results);
+    const requestedMonths = Array.isArray(payload.requestedMonths) ? payload.requestedMonths : [];
+    const missingMonths = requestedMonths.filter((month) => !checkedMonths.includes(month));
+    const coverageNote = missingMonths.length
+      ? ` This saved data has not checked ${missingMonths.map(formatMonth).join(", ")} yet.`
+      : "";
     return {
       results: payload.results,
-      note: `${source}${checked}.`,
+      checkedMonths,
+      coverageStatus: payload.coverageStatus || "checked",
+      note: `${source}${checked}.${coverageNote}`,
     };
   } catch {
     return null;
@@ -873,6 +886,10 @@ function noResultsMessage() {
   if (selectedMonth && selectedMonth !== "any" && !state.dataMonths.includes(selectedMonth)) {
     const checked = state.dataMonths.length ? state.dataMonths.map(formatMonth).join(", ") : "no saved months";
     return `No checked campsite data for ${formatMonth(selectedMonth)} yet. Current saved results cover ${checked}.`;
+  }
+  if (state.coverageStatus === "not_checked") {
+    const checked = state.dataMonths.length ? state.dataMonths.map(formatMonth).join(", ") : "no saved months";
+    return `The NAS fallback has not checked the full selected window yet. Current saved results cover ${checked}.`;
   }
   return "Try a larger distance, a different weekend, or fewer people.";
 }

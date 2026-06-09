@@ -112,7 +112,7 @@ sudo tailscale serve --bg --https=443 http://127.0.0.1:8787
 tailscale serve status
 ```
 
-The website defaults to your private Tailscale NAS URL. The `Connect NAS` button lets you override it if needed:
+The website defaults to your private Tailscale NAS URL:
 
 ```text
 https://<nas-device>.<tailnet-name>.ts.net
@@ -134,11 +134,14 @@ Response:
 {
   "source": "live",
   "lastChecked": "2026-06-09T17:55:00Z",
+  "checkedMonths": ["2026-07", "2026-08"],
+  "requestedMonths": ["2026-08"],
+  "coverageStatus": "checked",
   "results": []
 }
 ```
 
-If live checks are blocked, return `source: "fallback"` with the latest saved results and a `lastChecked` timestamp. The website labels that clearly.
+If live checks are blocked, return `source: "fallback"` with the latest saved results and a `lastChecked` timestamp. The API also reports which months the saved file covers, so the website can distinguish "not checked yet" from "checked and no campsites found."
 
 ## Configuration Notes
 
