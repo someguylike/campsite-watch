@@ -10,8 +10,8 @@ browser = ["playwright>=1.44"]
 
 [project.scripts]
 campsite-watch = "campsite_watch.app:main"
+campsite-watch-api = "campsite_watch.api:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
-

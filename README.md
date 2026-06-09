@@ -71,6 +71,73 @@ The compose file stores persistent data in:
 
 For first browser setup in Docker, it is often easier to run the service once on your laptop with the same mounted `browser-profile`, complete the manual login/challenge, then copy that profile directory to the NAS.
 
+## Linux Mint NAS Worker
+
+The GitHub Pages website can point at a NAS worker for fresh checks. On Linux Mint:
+
+Automatic install from a repo checkout:
+
+```bash
+cd /path/to/campsite-watch
+./scripts/install_linux_mint.sh
+```
+
+Or install manually:
+
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv
+cd /path/to/campsite-watch
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e '.[browser]'
+python -m playwright install --with-deps chromium
+```
+
+Start the local API. Keep it bound to localhost; Tailscale Serve will provide tailnet HTTPS:
+
+```bash
+export CAMPSITE_WATCH_API_TOKEN="$(openssl rand -base64 32)"
+campsite-watch \
+  --serve-api \
+  --api-host 127.0.0.1 \
+  --api-port 8787 \
+  --allowed-origin https://someguylike.github.io
+```
+
+Expose it to your tailnet with Tailscale Serve, not Funnel:
+
+```bash
+sudo tailscale serve --bg --https=443 http://127.0.0.1:8787
+tailscale serve status
+```
+
+The website refresh button lets you set the private Tailscale NAS URL and access token, for example:
+
+```text
+https://<nas-device>.<tailnet-name>.ts.net
+```
+
+Do not use `tailscale funnel` for this API unless you intentionally want public internet exposure. Prefer Tailscale ACLs that allow only your trusted users/devices to reach the NAS service.
+
+The API contract is:
+
+```text
+GET /api/search?zip=98040&people=4&distance=80&distanceMode=miles&month=2026-08
+```
+
+Response:
+
+```json
+{
+  "source": "live",
+  "lastChecked": "2026-06-09T17:55:00Z",
+  "results": []
+}
+```
+
+If live checks are blocked, return `source: "fallback"` with the latest saved results and a `lastChecked` timestamp. The website labels that clearly.
+
 ## Configuration Notes
 
 The date window is configured per watch:

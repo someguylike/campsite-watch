@@ -1,5 +1,7 @@
 const ORIGIN = "98040";
 const ORIGIN_COORDS = [47.5707, -122.2221];
+const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
+const API_TOKEN_STORAGE_KEY = "campsite-watch.apiToken";
 
 const parks = {
   "Blake Island State Park": {
@@ -363,9 +365,14 @@ const dateInput = document.querySelector("#date-input");
 const monthFilter = document.querySelector("#month-filter");
 const searchNote = document.querySelector("#search-note");
 const mapListEl = document.querySelector("#map-list");
+const savedWatchSummary = document.querySelector("#saved-watch-summary");
+const notifyToggle = document.querySelector("#notify-toggle");
+const runSavedWatchButton = document.querySelector("#run-saved-watch");
+const clearSavedWatchButton = document.querySelector("#clear-saved-watch");
 
 populateDateFilters();
 populateDistanceOptions();
+renderSavedWatch();
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -422,12 +429,45 @@ document.querySelector("#account-button").addEventListener("click", () => {
 });
 
 document.querySelector("#watch-button").addEventListener("click", () => {
-  window.localStorage.setItem("campsite-watch.saved", JSON.stringify(state));
-  toast("Saved this watch locally.");
+  saveCurrentWatch();
+});
+
+runSavedWatchButton.addEventListener("click", async () => {
+  const watch = loadSavedWatch();
+  if (!watch) {
+    toast("No saved watch yet.");
+    return;
+  }
+  applyWatch(watch);
+  await runSearch();
+});
+
+clearSavedWatchButton.addEventListener("click", () => {
+  window.localStorage.removeItem("campsite-watch.saved");
+  renderSavedWatch();
+  toast("Saved watch cleared.");
 });
 
 document.querySelector("#sync-button").addEventListener("click", () => {
-  toast("Live sync will connect to the Python monitor next.");
+  const current = apiBase();
+  const next = window.prompt("Private Tailscale NAS URL", current || "https://your-nas.your-tailnet.ts.net");
+  if (next === null) return;
+
+  const trimmed = next.trim().replace(/\/+$/, "");
+  if (trimmed) {
+    window.localStorage.setItem(API_BASE_STORAGE_KEY, trimmed);
+    const currentToken = apiToken();
+    const token = window.prompt("NAS access token", currentToken ? "Saved token is set" : "");
+    if (token !== null && token.trim() && token !== "Saved token is set") {
+      window.localStorage.setItem(API_TOKEN_STORAGE_KEY, token.trim());
+    }
+    toast("NAS worker settings saved.");
+  } else {
+    window.localStorage.removeItem(API_BASE_STORAGE_KEY);
+    window.localStorage.removeItem(API_TOKEN_STORAGE_KEY);
+    toast("NAS worker disconnected.");
+  }
+  runSearch();
 });
 
 async function runSearch() {
@@ -442,19 +482,72 @@ async function runSearch() {
     state.originQuery = zip;
   }
 
-  state.results = availability
+  const apiBaseUrl = apiBase();
+  const nasResult = apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
+  if (nasResult?.error === "unauthorized") {
+    state.results = prepareResults(availability);
+    searchNote.textContent = "NAS token is missing or invalid. Showing the saved website snapshot.";
+  } else if (nasResult) {
+    state.results = prepareResults(nasResult.results);
+    searchNote.textContent = nasResult.note;
+  } else {
+    state.results = prepareResults(availability);
+    searchNote.textContent = apiBaseUrl
+      ? "NAS worker is unavailable or blocked. Showing the latest saved website snapshot."
+      : "Showing the saved website snapshot. Connect a NAS worker for fresh live checks.";
+  }
+
+  visibleCountEl.textContent = String(state.results.length);
+  document.querySelector("#map-scope").textContent =
+    `${state.origin.label} start · ${distanceLabel()} radius · green numbers match the list`;
+  renderResults(state.results);
+  renderMap(state.results);
+  renderMapList(state.results);
+}
+
+function prepareResults(items) {
+  return items
     .map((item) => ({
       ...item,
       displayDistanceMiles: Math.round(distanceMiles(state.origin, item)),
     }))
     .filter(matchesSearch)
     .sort((a, b) => a.displayDistanceMiles - b.displayDistanceMiles || a.date.localeCompare(b.date));
+}
 
-  visibleCountEl.textContent = String(state.results.length);
-  document.querySelector("#map-scope").textContent = `${state.origin.label} origin · ${distanceLabel()} search radius`;
-  renderResults(state.results);
-  renderMap(state.results);
-  renderMapList(state.results);
+async function fetchNasResults(apiBaseUrl) {
+  const url = new URL("/api/search", apiBaseUrl);
+  url.searchParams.set("zip", zipInput.value.trim() || ORIGIN);
+  url.searchParams.set("people", String(state.partySize));
+  url.searchParams.set("distance", String(state.maxDistance));
+  url.searchParams.set("distanceMode", distanceMode.value);
+  if (state.tripDate) {
+    url.searchParams.set("date", state.tripDate);
+  } else if (state.month !== "any") {
+    url.searchParams.set("month", state.month);
+  }
+
+  try {
+    const token = apiToken();
+    const headers = { Accept: "application/json" };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const response = await fetch(url.toString(), { headers });
+    if (response.status === 401) return { error: "unauthorized" };
+    if (!response.ok) return null;
+    const payload = await response.json();
+    if (!Array.isArray(payload.results)) return null;
+
+    const source = payload.source === "live" ? "Live NAS result" : "Saved NAS fallback";
+    const checked = payload.lastChecked ? ` · last checked ${formatDateTime(payload.lastChecked)}` : "";
+    return {
+      results: payload.results,
+      note: `${source}${checked}.`,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function resolveOrigin(zip) {
@@ -479,6 +572,64 @@ async function resolveOrigin(zip) {
     zipInput.value = ORIGIN;
     return zipCoordinates[ORIGIN];
   }
+}
+
+function saveCurrentWatch() {
+  const watch = currentWatch();
+  window.localStorage.setItem("campsite-watch.saved", JSON.stringify(watch));
+  renderSavedWatch();
+  toast("Saved this search watch.");
+}
+
+function currentWatch() {
+  return {
+    zip: zipInput.value.trim() || ORIGIN,
+    partySize: Number(partySizeInput.value),
+    tripDate: dateInput.value,
+    month: monthFilter.value,
+    distanceMode: distanceMode.value,
+    distance: distanceFilter.value,
+    notify: notifyToggle.checked,
+  };
+}
+
+function loadSavedWatch() {
+  try {
+    const raw = window.localStorage.getItem("campsite-watch.saved");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function applyWatch(watch) {
+  zipInput.value = watch.zip || ORIGIN;
+  partySizeInput.value = String(watch.partySize || 2);
+  dateInput.value = watch.tripDate || "";
+  monthFilter.value = watch.month || "any";
+  distanceMode.value = watch.distanceMode || "hours";
+  populateDistanceOptions();
+  distanceFilter.value = watch.distance || "30";
+  notifyToggle.checked = watch.notify !== false;
+}
+
+function renderSavedWatch() {
+  const watch = loadSavedWatch();
+  runSavedWatchButton.disabled = !watch;
+  clearSavedWatchButton.disabled = !watch;
+
+  if (!watch) {
+    savedWatchSummary.textContent = "No saved watch yet. Set your search inputs, then click Save Watch.";
+    return;
+  }
+
+  const when = watch.tripDate
+    ? formatDate(watch.tripDate)
+    : watch.month && watch.month !== "any"
+      ? formatMonth(watch.month)
+      : "any available weekend";
+  const distanceText = watch.distanceMode === "miles" ? `${watch.distance} miles` : driveTimeLabel(watch.distance);
+  savedWatchSummary.textContent = `${watch.zip || ORIGIN} · ${when} · ${watch.partySize || 2} people · ${distanceText}`;
 }
 
 async function resolveZipFromCoords(lat, lon) {
@@ -557,6 +708,36 @@ function selectedDistanceMiles() {
 function distanceLabel() {
   const selected = distanceFilter.options[distanceFilter.selectedIndex];
   return selected ? selected.textContent : `${state.maxDistance} miles`;
+}
+
+function driveTimeLabel(value) {
+  return (
+    {
+      20: "about 1 hour",
+      30: "about 1-2 hours",
+      50: "about 2 hours",
+      80: "about 3-4 hours",
+    }[Number(value)] ?? `${value} miles`
+  );
+}
+
+function apiBase() {
+  return window.localStorage.getItem(API_BASE_STORAGE_KEY) || window.CAMPSITE_WATCH_API_BASE_URL || "";
+}
+
+function apiToken() {
+  return window.localStorage.getItem(API_TOKEN_STORAGE_KEY) || "";
+}
+
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function dateInRange(value, start, end) {
@@ -674,7 +855,7 @@ function renderMapList(items) {
   }
 
   mapListEl.innerHTML = `
-    <h2>Map pins</h2>
+    <h2>Numbered parks on the map</h2>
     <ol>
       ${[...byPark.values()]
         .map(

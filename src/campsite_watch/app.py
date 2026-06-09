@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from datetime import date
 import logging
+import os
 from pathlib import Path
 import time
 
@@ -11,6 +12,7 @@ from .config import load_config
 from .dates import weekend_stays
 from .notify import notify
 from .state import StateStore
+from .api import serve_api
 
 
 def run_once(config_path: Path, alert_all_changes: bool) -> int:
@@ -82,6 +84,12 @@ def main() -> None:
     parser.add_argument("--once", action="store_true", help="run one check cycle and exit")
     parser.add_argument("--alert-all-changes", action="store_true", help="also notify on blocked/error transitions")
     parser.add_argument("--init-browser", action="store_true", help="open a persistent browser profile for manual login")
+    parser.add_argument("--serve-api", action="store_true", help="serve latest results for the website")
+    parser.add_argument("--api-host", default="127.0.0.1")
+    parser.add_argument("--api-port", default=8787, type=int)
+    parser.add_argument("--results-json", default="./data/latest-results.json", type=Path)
+    parser.add_argument("--allowed-origin", default="*")
+    parser.add_argument("--api-token", default=os.environ.get("CAMPSITE_WATCH_API_TOKEN", ""))
     parser.add_argument("--log-level", default="INFO")
     args = parser.parse_args()
 
@@ -89,6 +97,10 @@ def main() -> None:
 
     if args.init_browser:
         init_browser(args.config)
+        return
+
+    if args.serve_api:
+        serve_api(args.api_host, args.api_port, args.results_json, args.allowed_origin, args.api_token)
         return
 
     if args.once:
@@ -104,4 +116,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

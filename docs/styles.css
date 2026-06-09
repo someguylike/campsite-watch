@@ -43,7 +43,6 @@ select {
 button,
 .secondary-button,
 .icon-button,
-.map-toolbar a,
 .directions-link {
   min-height: 40px;
   border: 1px solid var(--accent);
@@ -63,7 +62,6 @@ button,
 
 .secondary-button,
 .icon-button,
-.map-toolbar a,
 .directions-link:not(.reserve-link) {
   background: white;
   color: var(--accent-strong);
@@ -392,6 +390,19 @@ select:focus {
   color: var(--muted);
   font-size: 0.86rem;
   line-height: 1.35;
+}
+
+.watch-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .map-list {

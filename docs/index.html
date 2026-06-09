@@ -35,14 +35,8 @@
           <div>
             <strong id="visible-count">0</strong>
             <span>available campsites</span>
-            <small id="map-scope">98040 origin · all monitored parks shown</small>
+            <small id="map-scope">Blue pill is your start. Green numbers are matching parks.</small>
           </div>
-          <a
-            id="all-directions"
-            href="https://www.google.com/maps/search/Washington+State+Parks+camping+near+98040"
-            target="_blank"
-            rel="noreferrer"
-          >Open Google Maps</a>
         </div>
       </section>
 
@@ -114,19 +108,23 @@
 
           <button id="search-button" type="submit">Search campsites</button>
           <p id="search-note" class="field-help">
-            If you choose a trip date, month is ignored. Results show available Friday-Sunday campsite windows.
+            Live search should run fresh first. If the reservation request is blocked, show the latest saved result with its last checked time.
           </p>
         </form>
 
         <section class="watch-card" aria-labelledby="watch-title">
           <div>
             <h2 id="watch-title">Saved watch</h2>
-            <p>1 tent, Friday-Sunday, parks near 98040, 3-6 month window.</p>
+            <p id="saved-watch-summary">No saved watch yet. Set your search inputs, then click Save Watch.</p>
           </div>
-          <label class="switch">
-            <input id="notify-toggle" type="checkbox" checked />
-            <span>Notify</span>
-          </label>
+          <div class="watch-actions">
+            <label class="switch">
+              <input id="notify-toggle" type="checkbox" checked />
+              <span>Notify</span>
+            </label>
+            <button id="run-saved-watch" class="secondary-button" type="button">Run saved</button>
+            <button id="clear-saved-watch" class="secondary-button" type="button">Clear</button>
+          </div>
         </section>
 
         <section id="map-list" class="map-list" aria-label="Available parks"></section>

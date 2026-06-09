@@ -1,0 +1,20 @@
+{
+  "source": "fallback",
+  "lastChecked": "2026-06-09T17:55:00Z",
+  "results": [
+    {
+      "date": "2026-07-10",
+      "end": "2026-07-12",
+      "park": "Blake Island State Park",
+      "city": "Manchester",
+      "zip": "98353",
+      "lat": 47.54247,
+      "lon": -122.4834,
+      "resourceLocationId": -2147483640,
+      "transactionLocationId": -2147483641,
+      "mapId": -2147483404,
+      "availableTentSites": 1,
+      "sampleSites": [["Main Loop", "21"]]
+    }
+  ]
+}
