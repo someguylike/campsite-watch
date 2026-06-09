@@ -345,23 +345,24 @@ const state = {
 };
 
 const map = L.map("map", {
-  attributionControl: false,
+  attributionControl: true,
   boxZoom: true,
   doubleClickZoom: true,
   dragging: true,
-  keyboard: false,
+  keyboard: true,
   scrollWheelZoom: false,
   tap: true,
   touchZoom: true,
   zoomControl: true,
 }).setView([47.49, -122.45], 9);
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 18,
+L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+  maxZoom: 20,
+  subdomains: "abcd",
 }).addTo(map);
 
 const markers = new Map();
-let connectionLines = [];
 let originMarker = null;
 let distanceCircle = null;
 const resultsEl = document.querySelector("#results");
@@ -395,8 +396,11 @@ function syncDateRange() {
   if (startDateInput.value || endDateInput.value) {
     monthFilter.value = "any";
   }
-  if (startDateInput.value && endDateInput.value && endDateInput.value < startDateInput.value) {
-    endDateInput.value = startDateInput.value;
+  if (startDateInput.value) {
+    endDateInput.min = addDaysIso(startDateInput.value, 1);
+    if (endDateInput.value && endDateInput.value <= startDateInput.value) {
+      endDateInput.value = endDateInput.min;
+    }
   }
 }
 
@@ -461,8 +465,9 @@ async function runSearch() {
   state.maxDistance = selectedDistanceMiles();
   state.maxDriveMinutes = selectedDriveMinutes();
   state.partySize = Number(partySizeInput.value);
-  state.startDate = startDateInput.value;
-  state.endDate = endDateInput.value || startDateInput.value;
+  const selectedRange = normalizedSelectedDateRange();
+  state.startDate = selectedRange.start;
+  state.endDate = selectedRange.end;
   state.month = monthFilter.value;
 
   if (zip) {
@@ -645,7 +650,7 @@ function populateDateFilters() {
   const windowRange = searchWindow();
   startDateInput.min = windowRange.start;
   startDateInput.max = windowRange.end;
-  endDateInput.min = windowRange.start;
+  endDateInput.min = addDaysIso(windowRange.start, 1);
   endDateInput.max = windowRange.end;
 
   const months = monthsInRange(windowRange.start, windowRange.end);
@@ -674,6 +679,12 @@ function addMonths(date, months) {
     result.setDate(0);
   }
   return result;
+}
+
+function addDaysIso(value, days) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return formatIsoDate(date);
 }
 
 function formatIsoDate(date) {
@@ -793,8 +804,26 @@ function hasSelectedDateRange() {
 }
 
 function selectedDateRange() {
-  const start = state.startDate || state.endDate;
-  const end = state.endDate || state.startDate;
+  if (state.startDate && state.endDate) {
+    return { start: state.startDate, end: state.endDate };
+  }
+  if (state.startDate) {
+    return { start: state.startDate, end: addDaysIso(state.startDate, 1) };
+  }
+  if (state.endDate) {
+    return { start: addDaysIso(state.endDate, -1), end: state.endDate };
+  }
+  return { start: "", end: "" };
+}
+
+function normalizedSelectedDateRange() {
+  const start = startDateInput.value || (endDateInput.value ? addDaysIso(endDateInput.value, -1) : "");
+  const end = endDateInput.value || (start ? addDaysIso(start, 1) : "");
+
+  if (start && end && end <= start) {
+    return { start, end: addDaysIso(start, 1) };
+  }
+
   return { start, end };
 }
 
@@ -812,7 +841,8 @@ function bookingRange(item) {
 
 function stayLabel(item) {
   const range = bookingRange(item);
-  return `${formatDate(range.start)}-${formatDate(range.end)}`;
+  const nights = nightsBetween(range.start, range.end);
+  return `${nights} night${nights === 1 ? "" : "s"} · ${formatDate(range.start)}-${formatDate(range.end)} checkout`;
 }
 
 function renderResults(items) {
@@ -857,8 +887,6 @@ function renderResults(items) {
 function renderMap(items) {
   markers.forEach((marker) => marker.remove());
   markers.clear();
-  connectionLines.forEach((line) => line.remove());
-  connectionLines = [];
   originMarker?.remove();
   distanceCircle?.remove();
   distanceCircle = null;
@@ -896,16 +924,6 @@ function renderMap(items) {
   }
 
   [...byPark.entries()].forEach(([parkName, item], index) => {
-    const parkLatLng = [item.lat, item.lon];
-    const line = L.polyline([originLatLng, parkLatLng], {
-      color: "#6f8794",
-      dashArray: "4 7",
-      opacity: 0.48,
-      weight: 2,
-      interactive: false,
-    }).addTo(map);
-    connectionLines.push(line);
-
     const marker = L.marker([item.lat, item.lon], {
       interactive: true,
       icon: L.divIcon({
@@ -920,7 +938,6 @@ function renderMap(items) {
         `<strong>${index + 1}. ${escapeHtml(parkName)}</strong><br>${escapeHtml(item.city)}, ${escapeHtml(item.zip)}<br>${escapeHtml(distanceText(item))}<br>${item.availableTentSites} available sites`,
       )
       .bindTooltip(`${index + 1}. ${parkName}`, {
-        permanent: true,
         direction: "top",
         offset: [0, -18],
         className: "map-label",
@@ -929,7 +946,15 @@ function renderMap(items) {
   });
 
   visibleCountEl.textContent = String(byPark.size);
-  map.setView(originLatLng, mapZoomForSearch());
+  if (markers.size) {
+    map.fitBounds([originMarker.getLatLng(), ...[...markers.values()].map((marker) => marker.getLatLng())], {
+      maxZoom: 10,
+      paddingBottomRight: [28, 100],
+      paddingTopLeft: [28, 28],
+    });
+  } else {
+    map.setView(originLatLng, mapZoomForSearch());
+  }
 }
 
 function renderMapList(items) {
@@ -968,7 +993,7 @@ function renderMapList(items) {
 
 function mapZoomForSearch() {
   const miles = state.maxDistance;
-  if (miles <= 25) return 9;
+  if (miles <= 25) return 8;
   if (miles <= 50) return 8;
   if (miles <= 90) return 7;
   if (miles <= 130) return 7;
@@ -1091,7 +1116,7 @@ function nightsBetween(start, end) {
   const startTime = new Date(`${start}T12:00:00`).getTime();
   const endTime = new Date(`${end}T12:00:00`).getTime();
   const days = Math.round((endTime - startTime) / 86400000);
-  return Math.max(1, days);
+  return Math.max(0, days);
 }
 
 function reservationLabel(item, site) {
