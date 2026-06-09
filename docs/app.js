@@ -5,6 +5,8 @@ const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
 const API_PASSWORD_STORAGE_KEY = "campsite-watch.apiPassword";
 const routeCache = new Map();
 
+window.localStorage.removeItem(API_BASE_STORAGE_KEY);
+
 const parks = {
   "Blake Island State Park": {
     city: "Manchester",
@@ -344,29 +346,7 @@ const state = {
   results: [],
 };
 
-const map = L.map("map", {
-  attributionControl: true,
-  boxZoom: true,
-  doubleClickZoom: true,
-  dragging: true,
-  keyboard: true,
-  scrollWheelZoom: false,
-  tap: true,
-  touchZoom: true,
-  zoomControl: true,
-}).setView([47.49, -122.45], 9);
-
-L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-  attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-  maxZoom: 20,
-  subdomains: "abcd",
-}).addTo(map);
-
-const markers = new Map();
-let originMarker = null;
-let distanceCircle = null;
 const resultsEl = document.querySelector("#results");
-const visibleCountEl = document.querySelector("#visible-count");
 const searchForm = document.querySelector("#search-form");
 const zipInput = document.querySelector("#zip-input");
 const distanceMode = document.querySelector("#distance-mode");
@@ -376,7 +356,6 @@ const startDateInput = document.querySelector("#start-date-input");
 const endDateInput = document.querySelector("#end-date-input");
 const monthFilter = document.querySelector("#month-filter");
 const searchNote = document.querySelector("#search-note");
-const mapListEl = document.querySelector("#map-list");
 
 populateDateFilters();
 populateDistanceOptions();
@@ -499,11 +478,7 @@ async function runSearch() {
       : "Showing the saved website snapshot.";
   }
 
-  document.querySelector("#map-scope").textContent =
-    `Map shows start point ${state.origin.label} and parks with matching available campsites. Click a pin for distance and booking details.`;
   renderResults(state.results);
-  renderMap(state.results);
-  renderMapList(state.results);
 }
 
 async function prepareResults(items) {
@@ -777,7 +752,7 @@ function driveTimeLabel(value) {
 }
 
 function apiBase() {
-  return window.localStorage.getItem(API_BASE_STORAGE_KEY) || window.CAMPSITE_WATCH_API_BASE_URL || DEFAULT_API_BASE_URL;
+  return window.CAMPSITE_WATCH_API_BASE_URL || DEFAULT_API_BASE_URL;
 }
 
 function apiPassword() {
@@ -882,122 +857,6 @@ function renderResults(items) {
     })
     .join("");
 
-}
-
-function renderMap(items) {
-  markers.forEach((marker) => marker.remove());
-  markers.clear();
-  originMarker?.remove();
-  distanceCircle?.remove();
-  distanceCircle = null;
-
-  const originLatLng = [state.origin.lat, state.origin.lon];
-  if (distanceMode.value === "miles") {
-    distanceCircle = L.circle(originLatLng, {
-      radius: state.maxDistance * 1609.34,
-      color: "#1f4e79",
-      fillOpacity: 0.04,
-      opacity: 0.22,
-      weight: 2,
-    }).addTo(map);
-  }
-
-  originMarker = L.marker(originLatLng, {
-    interactive: true,
-    icon: L.divIcon({
-      className: "",
-      html: `<div class="origin-marker">${escapeHtml(state.origin.label)}</div>`,
-      iconSize: [44, 34],
-      iconAnchor: [22, 17],
-    }),
-  })
-    .addTo(map)
-    .bindPopup(`<strong>Starting point</strong><br>${escapeHtml(state.origin.label)}`)
-    .bindTooltip("Start", { permanent: true, direction: "top", offset: [0, -18], className: "map-label" });
-
-  const byPark = new Map();
-  for (const item of items) {
-    const existing = byPark.get(item.park);
-    if (!existing || item.availableTentSites > existing.availableTentSites) {
-      byPark.set(item.park, item);
-    }
-  }
-
-  [...byPark.entries()].forEach(([parkName, item], index) => {
-    const marker = L.marker([item.lat, item.lon], {
-      interactive: true,
-      icon: L.divIcon({
-        className: "",
-        html: `<div class="result-marker">${index + 1}</div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      }),
-    })
-      .addTo(map)
-      .bindPopup(
-        `<strong>${index + 1}. ${escapeHtml(parkName)}</strong><br>${escapeHtml(item.city)}, ${escapeHtml(item.zip)}<br>${escapeHtml(distanceText(item))}<br>${item.availableTentSites} available sites`,
-      )
-      .bindTooltip(`${index + 1}. ${parkName}`, {
-        direction: "top",
-        offset: [0, -18],
-        className: "map-label",
-      });
-    markers.set(parkName, marker);
-  });
-
-  visibleCountEl.textContent = String(byPark.size);
-  if (markers.size) {
-    map.fitBounds([originMarker.getLatLng(), ...[...markers.values()].map((marker) => marker.getLatLng())], {
-      maxZoom: 10,
-      paddingBottomRight: [28, 100],
-      paddingTopLeft: [28, 28],
-    });
-  } else {
-    map.setView(originLatLng, mapZoomForSearch());
-  }
-}
-
-function renderMapList(items) {
-  const byPark = new Map();
-  for (const item of items) {
-    const current = byPark.get(item.park);
-    if (!current) {
-      byPark.set(item.park, {
-        park: item.park,
-        city: item.city,
-        distance: distanceText(item),
-        weekends: 1,
-      });
-    } else {
-      current.weekends += 1;
-    }
-  }
-
-  if (!byPark.size) {
-    mapListEl.innerHTML = "";
-    return;
-  }
-
-  mapListEl.innerHTML = `
-    <h2>Available parks on the map</h2>
-    <ol>
-      ${[...byPark.values()]
-        .map(
-          (item) =>
-            `<li><strong>${escapeHtml(item.park)}</strong><span>${escapeHtml(item.city)} · ${escapeHtml(item.distance)} · ${item.weekends} weekend${item.weekends === 1 ? "" : "s"}</span></li>`,
-        )
-        .join("")}
-    </ol>
-  `;
-}
-
-function mapZoomForSearch() {
-  const miles = state.maxDistance;
-  if (miles <= 25) return 8;
-  if (miles <= 50) return 8;
-  if (miles <= 90) return 7;
-  if (miles <= 130) return 7;
-  return 6;
 }
 
 function dataMonths(items) {
