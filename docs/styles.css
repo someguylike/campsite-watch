@@ -52,10 +52,15 @@ button,
   text-decoration: none;
 }
 
+.reserve-link {
+  background: var(--accent);
+  color: white;
+}
+
 .secondary-button,
 .icon-button,
 .map-toolbar a,
-.directions-link {
+.directions-link:not(.reserve-link) {
   background: white;
   color: var(--accent-strong);
 }
@@ -189,10 +194,49 @@ h2 {
   gap: 6px;
 }
 
-.field span {
+.field span,
+legend {
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 780;
+}
+
+.month-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.month-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.month-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 780;
+  padding: 7px 10px;
+}
+
+.month-options label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.month-options input {
+  width: 15px;
+  min-height: 15px;
 }
 
 input,
@@ -344,6 +388,12 @@ select:focus {
   gap: 10px;
 }
 
+.link-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .status-line {
   color: var(--muted);
   font-size: 0.8rem;
@@ -451,4 +501,3 @@ select:focus {
     width: 100%;
   }
 }
-

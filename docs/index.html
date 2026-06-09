@@ -49,22 +49,27 @@
         <form id="filters" class="filters">
           <label class="field">
             <span>Search</span>
-            <input id="search-input" type="search" placeholder="Park, loop, or site" autocomplete="off" />
+            <input
+              id="search-input"
+              type="search"
+              placeholder="Filter by park, date, loop, site, city, or ZIP"
+              autocomplete="off"
+            />
           </label>
 
+          <fieldset class="field month-field">
+            <legend>Months</legend>
+            <div class="month-options" aria-label="Months to include">
+              <label><input type="checkbox" name="month" value="2026-07" checked /> Jul</label>
+              <label><input type="checkbox" name="month" value="2026-08" checked /> Aug</label>
+              <label><input type="checkbox" name="month" value="2026-09" checked /> Sep</label>
+              <label><input type="checkbox" name="month" value="2026-10" /> Oct</label>
+              <label><input type="checkbox" name="month" value="2026-11" /> Nov</label>
+              <label><input type="checkbox" name="month" value="2026-12" /> Dec</label>
+            </div>
+          </fieldset>
+
           <div class="filter-grid">
-            <label class="field">
-              <span>Month</span>
-              <select id="month-filter">
-                <option value="all">All months</option>
-                <option value="2026-07">July</option>
-                <option value="2026-08">August</option>
-                <option value="2026-09">September</option>
-                <option value="2026-10">October</option>
-                <option value="2026-11">November</option>
-                <option value="2026-12">December</option>
-              </select>
-            </label>
             <label class="field">
               <span>Max distance</span>
               <select id="distance-filter">
@@ -132,4 +137,3 @@
     <script src="./app.js"></script>
   </body>
 </html>
-

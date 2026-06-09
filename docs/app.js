@@ -6,48 +6,72 @@ const parks = {
     zip: "98353",
     lat: 47.54247,
     lon: -122.4834,
+    resourceLocationId: -2147483640,
+    transactionLocationId: -2147483641,
+    mapId: -2147483404,
   },
   "Manchester State Park": {
     city: "Port Orchard",
     zip: "98366",
     lat: 47.57732,
     lon: -122.5563,
+    resourceLocationId: -2147483589,
+    transactionLocationId: -2147483603,
+    mapId: -2147483371,
   },
   "Illahee State Park": {
     city: "Bremerton",
     zip: "98310",
     lat: 47.59558,
     lon: -122.5974,
+    resourceLocationId: -2147483607,
+    transactionLocationId: -2147483616,
+    mapId: -2147483380,
   },
   "Dash Point State Park": {
     city: "Federal Way",
     zip: "98023",
     lat: 47.31779,
     lon: -122.4071,
+    resourceLocationId: -2147483625,
+    transactionLocationId: -2147483631,
+    mapId: -2147483389,
   },
   "Kanaskat-Palmer State Park": {
     city: "Ravensdale",
     zip: "98051",
     lat: 47.31198,
     lon: -121.8987,
+    resourceLocationId: -2147483601,
+    transactionLocationId: -2147483614,
+    mapId: -2147483379,
   },
   "Kitsap Memorial State Park": {
     city: "Poulsbo",
     zip: "98370",
     lat: 47.81642,
     lon: -122.6444,
+    resourceLocationId: -2147483600,
+    transactionLocationId: -2147483613,
+    mapId: -2147483378,
   },
   "Scenic Beach State Park": {
     city: "Seabeck",
     zip: "98380",
     lat: 47.64626,
     lon: -122.8469,
+    resourceLocationId: -2147483560,
+    transactionLocationId: -2147483584,
+    mapId: -2147483359,
   },
   "Belfair State Park": {
     city: "Belfair",
     zip: "98528",
     lat: 47.43167,
     lon: -122.877,
+    resourceLocationId: -2147483643,
+    transactionLocationId: -2147483643,
+    mapId: -2147483319,
   },
 };
 
@@ -264,7 +288,7 @@ function result(date, end, park, distanceMiles, availableTentSites, sampleSites)
 
 const state = {
   search: "",
-  month: "all",
+  months: new Set(["2026-07", "2026-08", "2026-09"]),
   maxDistance: 30,
   minSites: 1,
 };
@@ -288,9 +312,13 @@ document.querySelector("#search-input").addEventListener("input", (event) => {
   render();
 });
 
-document.querySelector("#month-filter").addEventListener("change", (event) => {
-  state.month = event.target.value;
-  render();
+document.querySelectorAll("input[name='month']").forEach((input) => {
+  input.addEventListener("change", () => {
+    state.months = new Set(
+      [...document.querySelectorAll("input[name='month']:checked")].map((node) => node.value),
+    );
+    render();
+  });
 });
 
 document.querySelector("#distance-filter").addEventListener("change", (event) => {
@@ -340,7 +368,7 @@ function matchesFilters(item) {
   return (
     item.distanceMiles <= state.maxDistance &&
     item.availableTentSites >= state.minSites &&
-    (state.month === "all" || item.date.startsWith(state.month)) &&
+    (!state.months.size || state.months.has(item.date.slice(0, 7))) &&
     (!state.search || haystack.includes(state.search))
   );
 }
@@ -367,7 +395,10 @@ function renderResults(items) {
           </div>
           <ul class="site-list">${sites}</ul>
           <div class="card-actions">
-            <a class="directions-link" href="${directionsUrl(item)}" target="_blank" rel="noreferrer">Directions</a>
+            <div class="link-group">
+              <a class="directions-link reserve-link" href="${reservationUrl(item)}" target="_blank" rel="noreferrer">Reserve</a>
+              <a class="directions-link" href="${directionsUrl(item)}" target="_blank" rel="noreferrer">Directions</a>
+            </div>
             <span class="status-line">1 tent · Friday-Sunday · checked in Chrome</span>
           </div>
         </article>
@@ -404,7 +435,10 @@ function renderMarkers(items) {
     marker.bindPopup(`
       <div class="popup-title">${escapeHtml(parkName)}</div>
       <div class="popup-copy">${item.availableTentSites} tent sites · ${formatDate(item.date)}-${formatDate(item.end)}</div>
-      <a class="directions-link" href="${directionsUrl(item)}" target="_blank" rel="noreferrer">Directions</a>
+      <div class="link-group">
+        <a class="directions-link reserve-link" href="${reservationUrl(item)}" target="_blank" rel="noreferrer">Reserve</a>
+        <a class="directions-link" href="${directionsUrl(item)}" target="_blank" rel="noreferrer">Directions</a>
+      </div>
     `);
     markers.set(parkName, marker);
   });
@@ -432,6 +466,27 @@ function focusPark(parkName) {
 function directionsUrl(item) {
   const destination = encodeURIComponent(`${item.park}, ${item.city}, WA ${item.zip}`);
   return `https://www.google.com/maps/dir/?api=1&origin=${ORIGIN}&destination=${destination}`;
+}
+
+function reservationUrl(item) {
+  const searchTime = new Date().toISOString().slice(0, 19);
+  const params = new URLSearchParams({
+    transactionLocationId: String(item.transactionLocationId),
+    resourceLocationId: String(item.resourceLocationId),
+    mapId: String(item.mapId),
+    searchTabGroupId: "0",
+    bookingCategoryId: "0",
+    startDate: item.date,
+    endDate: item.end,
+    nights: "2",
+    isReserving: "true",
+    equipmentId: "-32768",
+    subEquipmentId: "-32768",
+    peopleCapacityCategoryCounts: "[[-32767,null,1,null]]",
+    searchTime,
+    flexibleSearch: `[false,false,"${item.date.slice(0, 8)}01",1]`,
+  });
+  return `https://washington.goingtocamp.com/create-booking/results?${params.toString()}`;
 }
 
 function formatDate(value) {
@@ -474,4 +529,3 @@ function toast(message) {
 }
 
 render();
-
