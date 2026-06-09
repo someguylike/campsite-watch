@@ -819,12 +819,7 @@ function renderMap(items) {
   });
 
   visibleCountEl.textContent = String(byPark.size);
-  const bounds = [originMarker.getLatLng(), ...[...markers.values()].map((marker) => marker.getLatLng())];
-  if (bounds.length > 1) {
-    map.fitBounds(bounds, { padding: [56, 56], maxZoom: 10 });
-  } else {
-    map.setView(originLatLng, 9);
-  }
+  map.setView(originLatLng, mapZoomForSearch());
 }
 
 function renderMapList(items) {
@@ -859,6 +854,15 @@ function renderMapList(items) {
         .join("")}
     </ol>
   `;
+}
+
+function mapZoomForSearch() {
+  const miles = state.maxDistance;
+  if (miles <= 25) return 10;
+  if (miles <= 50) return 9;
+  if (miles <= 90) return 8;
+  if (miles <= 130) return 7;
+  return 6;
 }
 
 function directionsUrl(item) {
