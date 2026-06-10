@@ -11,6 +11,7 @@ from campsite_watch.api import _matches_query
 from campsite_watch.api import _official_park_url
 from campsite_watch.api import _result_in_refresh_scope
 from campsite_watch.api import _ranges_overlap
+from campsite_watch.api import _resource_tent_allowance
 from campsite_watch.api import _validate_refresh_query
 
 
@@ -71,7 +72,7 @@ class ApiBehaviorTest(unittest.TestCase):
             "Group size",
             _validate_refresh_query(
                 {
-                    "people": ["16"],
+                    "people": ["9"],
                     "distanceMode": ["hours"],
                     "distance": ["300"],
                     "month": ["2026-11"],
@@ -142,6 +143,20 @@ class ApiBehaviorTest(unittest.TestCase):
         )
         self.assertTrue(_result_in_refresh_scope(item, {"month": ["2026-07"]}, ["2026-07"]))
         self.assertFalse(_result_in_refresh_scope(item, {"month": ["2026-08"]}, ["2026-08"]))
+
+    def test_resource_tent_allowance_reads_defined_attribute(self) -> None:
+        self.assertEqual(
+            _resource_tent_allowance(
+                {
+                    "definedAttributes": [
+                        {"attributeDefinitionId": -32731, "value": 8.0},
+                        {"attributeDefinitionId": -32732, "value": 2.0},
+                    ]
+                }
+            ),
+            2,
+        )
+        self.assertEqual(_resource_tent_allowance({"definedAttributes": []}), 0)
 
 
 if __name__ == "__main__":

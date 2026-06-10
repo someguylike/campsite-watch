@@ -20,6 +20,7 @@ from urllib.request import Request, urlopen
 GOING_TO_CAMP_BASE = "https://washington.goingtocamp.com"
 CAMPSITE_EQUIPMENT_ID = -32768
 PEOPLE_CAPACITY_CATEGORY_ID = -32767
+TENT_ALLOWANCE_ATTRIBUTE_ID = -32732
 AVAILABLE_STATUS = 0
 MAX_REFRESH_CHECKS = 450
 MAX_REFRESH_WINDOW_DAYS = 190
@@ -696,7 +697,13 @@ class GoingToCampCrawler:
                 if not site_name or site_name in seen:
                     continue
                 seen.add(site_name)
-                sites.append([_resource_loop_name(resource, map_labels), site_name])
+                sites.append(
+                    [
+                        _resource_loop_name(resource, map_labels),
+                        site_name,
+                        _resource_tent_allowance(resource),
+                    ]
+                )
         return sites
 
     def _get_json(self, path: str, params: dict[str, object], *, referer: str) -> object:
@@ -911,8 +918,8 @@ def _requested_date_ranges(query: dict[str, list[str]]) -> list[tuple[date, date
 
 def _validate_refresh_query(query: dict[str, list[str]]) -> str:
     people = int(_as_float(_first(query, "people", "4"), 4))
-    if people < 2 or people > 15:
-        return "Group size must be between 2 and 15 people."
+    if people < 2 or people > 8:
+        return "Group size must be between 2 and 8 people."
 
     distance_mode = _first(query, "distanceMode", "hours")
     distance = int(_as_float(_first(query, "distance", "180"), 180))
@@ -1022,6 +1029,16 @@ def _resource_name(resource: dict[str, object]) -> str:
             if isinstance(value, dict) and value.get("name"):
                 return str(value["name"])
     return str(resource.get("resourceId", ""))
+
+
+def _resource_tent_allowance(resource: dict[str, object]) -> int:
+    for attribute in resource.get("definedAttributes") or []:
+        if not isinstance(attribute, dict):
+            continue
+        if attribute.get("attributeDefinitionId") != TENT_ALLOWANCE_ATTRIBUTE_ID:
+            continue
+        return max(0, int(_as_float(attribute.get("value"), 0)))
+    return 0
 
 
 def _resource_loop_name(resource: dict[str, object], map_labels: dict[int, str]) -> str:

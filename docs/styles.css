@@ -664,6 +664,11 @@ button:disabled {
   color: var(--accent-strong);
 }
 
+.site-chip-detail {
+  color: var(--muted);
+  font-weight: 680;
+}
+
 .direct-site {
   border-color: rgb(21 127 59 / 45%);
   background: #eef8f0;
