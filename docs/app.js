@@ -1101,20 +1101,18 @@ function groupResultsByPark(items) {
 }
 
 function parkImageMarkup(item) {
-  const imageUrls = parkImageUrls(item);
+  const imageUrls = parkImageUrls(item).slice(0, 5);
   if (!imageUrls.length) return "";
   const credit = item.imageCredit ? `<span>Photo: ${escapeHtml(item.imageCredit)}</span>` : "";
-  const heroUrl = imageUrls[0];
-  const strip = imageUrls.slice(1, 5)
+  const photos = imageUrls
     .map(
       (url, index) =>
-        `<img class="park-photo-thumb" src="${escapeHtml(url)}" alt="${escapeHtml(item.park)} photo ${index + 2}" loading="lazy" />`,
+        `<img class="park-photo" src="${escapeHtml(url)}" alt="${escapeHtml(item.park)} photo ${index + 1}" loading="lazy" />`,
     )
     .join("");
   return `
     <a class="park-photo-link" href="${escapeHtml(safeExternalUrl(parkInfoUrl(item), "https://parks.wa.gov/"))}" target="_blank" rel="noreferrer">
-      <img class="park-photo" src="${escapeHtml(heroUrl)}" alt="${escapeHtml(item.park)}" loading="lazy" />
-      ${strip ? `<span class="park-photo-strip">${strip}</span>` : ""}
+      <span class="park-photo-grid photo-count-${imageUrls.length}">${photos}</span>
       ${credit ? `<span class="photo-credit">${credit}</span>` : ""}
     </a>
   `;

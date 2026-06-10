@@ -483,39 +483,60 @@ button:disabled {
 
 .park-photo-link {
   position: relative;
-  display: grid;
-  gap: 6px;
+  display: block;
   overflow: hidden;
   margin: -14px -14px 12px;
   border-radius: 8px 8px 0 0;
   background: var(--surface-strong);
-  padding-bottom: 6px;
+  padding: 6px;
   text-decoration: none;
+}
+
+.park-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
 }
 
 .park-photo {
   display: block;
   width: 100%;
-  max-height: 260px;
-  aspect-ratio: 16 / 8;
-  object-fit: contain;
-  background: var(--surface-strong);
-}
-
-.park-photo-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  padding: 0 6px;
-}
-
-.park-photo-thumb {
-  display: block;
-  width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: 6px;
   background: var(--surface);
+  grid-column: span 2;
   object-fit: contain;
+}
+
+.photo-count-1 {
+  grid-template-columns: 1fr;
+}
+
+.photo-count-1 .park-photo {
+  max-height: 260px;
+  aspect-ratio: 16 / 8;
+}
+
+.photo-count-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.photo-count-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.photo-count-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.photo-count-2 .park-photo,
+.photo-count-3 .park-photo,
+.photo-count-4 .park-photo {
+  grid-column: auto;
+}
+
+.photo-count-5 .park-photo:nth-child(n + 4) {
+  grid-column: span 3;
 }
 
 .photo-credit {
