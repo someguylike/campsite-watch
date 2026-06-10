@@ -954,42 +954,76 @@ function renderResults(items) {
     return;
   }
 
-  resultsEl.innerHTML = items
-    .map((item) => {
-      const sites = item.sampleSites
-        .map((site) => {
-          const exactSite = Boolean(siteMapId(item, site));
-          return `<li><a class="site-chip${exactSite ? " exact-site" : ""}" href="${reservationUrl(item, site)}" target="_blank" rel="noreferrer" title="${exactSite ? "Reserve this exact site" : "Open this park and weekend"}">${escapeHtml(site[0])} ${escapeHtml(site[1])}${exactSite ? " · exact" : ""}</a></li>`;
-        })
-        .join("");
-      const firstSite = item.sampleSites[0];
+  resultsEl.innerHTML = groupResultsByPark(items)
+    .map((group) => {
+      const firstItem = group.items[0];
+      const weekends = group.items.length;
       return `
-        <article class="result-card" data-park="${escapeHtml(item.park)}">
+        <article class="result-card" data-park="${escapeHtml(group.park)}">
           <div class="result-header">
             <div>
               <div class="park-title-row">
                 <h2 class="park-name">
-                  <a href="${parkInfoUrl(item)}" target="_blank" rel="noreferrer">${escapeHtml(item.park)}</a>
+                  <a href="${parkInfoUrl(firstItem)}" target="_blank" rel="noreferrer">${escapeHtml(group.park)}</a>
                 </h2>
-                <a class="park-title-link" href="${googleMapsPlaceUrl(item)}" target="_blank" rel="noreferrer">Google Maps</a>
+                <a class="park-title-link" href="${googleMapsPlaceUrl(firstItem)}" target="_blank" rel="noreferrer">Google Maps</a>
               </div>
-              <div class="meta">${formatDate(item.date)}-${formatDate(item.end)} · ${escapeHtml(item.city)}, ${escapeHtml(item.zip)} · ${distanceText(item)} from ${escapeHtml(state.origin.label)}</div>
+              <div class="meta">${escapeHtml(firstItem.city)}, ${escapeHtml(firstItem.zip)} · ${distanceText(firstItem)} from ${escapeHtml(state.origin.label)}</div>
             </div>
-            <div class="badge">${item.availableTentSites} sites</div>
+            <div class="badge">${weekends} weekend${weekends === 1 ? "" : "s"}</div>
           </div>
-          <ul class="site-list">${sites}</ul>
-          <div class="card-actions">
-            <div class="link-group">
-              <a class="directions-link reserve-link" href="${reservationUrl(item, firstSite)}" target="_blank" rel="noreferrer">${reservationLabel(item, firstSite)}</a>
-              <a class="directions-link" href="${directionsUrl(item)}" target="_blank" rel="noreferrer">Directions</a>
-            </div>
-            <span class="status-line">1 tent · ${state.partySize} people · ${stayLabel(item)}</span>
+          <div class="weekend-list">
+            ${group.items.map(renderWeekendRow).join("")}
           </div>
+          <a class="directions-link park-directions-link" href="${directionsUrl(firstItem)}" target="_blank" rel="noreferrer">Directions</a>
         </article>
       `;
     })
     .join("");
 
+}
+
+function groupResultsByPark(items) {
+  const groups = new Map();
+  for (const item of items) {
+    if (!groups.has(item.park)) {
+      groups.set(item.park, { park: item.park, items: [] });
+    }
+    groups.get(item.park).items.push(item);
+  }
+  return [...groups.values()];
+}
+
+function renderWeekendRow(item) {
+  const firstSite = item.sampleSites[0];
+  return `
+    <section class="weekend-row" aria-label="${escapeHtml(item.park)} ${formatDate(item.date)} to ${formatDate(item.end)}">
+      <div class="weekend-row-header">
+        <div>
+          <h3>${formatDate(item.date)}-${formatDate(item.end)}</h3>
+          <p>${stayLabel(item)}</p>
+        </div>
+        <span class="weekend-site-count">${item.availableTentSites} sites</span>
+      </div>
+      <ul class="site-list">${renderSiteLinks(item)}</ul>
+      <div class="card-actions">
+        <div class="link-group">
+          <a class="directions-link reserve-link" href="${reservationUrl(item, firstSite)}" target="_blank" rel="noreferrer">${reservationLabel(item, firstSite)}</a>
+        </div>
+        <span class="status-line">1 tent · ${state.partySize} people</span>
+      </div>
+    </section>
+  `;
+}
+
+function renderSiteLinks(item) {
+  return item.sampleSites
+    .map((site) => {
+      const directSite = Boolean(siteMapId(item, site));
+      const title = directSite ? "Open booking with this campsite selected" : "Open this park and weekend";
+      return `<li><a class="site-chip${directSite ? " direct-site" : ""}" href="${reservationUrl(item, site)}" target="_blank" rel="noreferrer" title="${title}">${escapeHtml(site[0])} ${escapeHtml(site[1])}</a></li>`;
+    })
+    .join("");
 }
 
 function dataMonths(items) {
@@ -1133,7 +1167,7 @@ function nightsBetween(start, end) {
 }
 
 function reservationLabel(item, site) {
-  return siteMapId(item, site) ? "Reserve exact site" : "Open booking";
+  return siteMapId(item, site) ? "Open selected site" : "Open booking";
 }
 
 function siteMapId(item, site) {

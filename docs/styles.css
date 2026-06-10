@@ -387,7 +387,7 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: 12px 0;
+  margin: 10px 0;
   padding: 0;
   list-style: none;
 }
@@ -412,10 +412,47 @@ button:disabled {
   color: var(--accent-strong);
 }
 
-.exact-site {
+.direct-site {
   border-color: rgb(21 127 59 / 45%);
   background: #eef8f0;
   color: #0f612e;
+}
+
+.weekend-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.weekend-row {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.weekend-row-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.weekend-row h3 {
+  margin: 0 0 2px;
+  font-size: 0.95rem;
+}
+
+.weekend-row p {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.weekend-site-count {
+  min-width: 64px;
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: right;
 }
 
 .card-actions {
@@ -434,6 +471,12 @@ button:disabled {
 .status-line {
   color: var(--muted);
   font-size: 0.8rem;
+}
+
+.park-directions-link {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 12px;
 }
 
 .popup-title {
@@ -466,10 +509,15 @@ button:disabled {
   .filter-grid,
   .result-header,
   .card-actions,
+  .weekend-row-header,
   .button-row {
     align-items: stretch;
     flex-direction: column;
     grid-template-columns: 1fr;
+  }
+
+  .weekend-site-count {
+    text-align: left;
   }
 
   .zip-row {
