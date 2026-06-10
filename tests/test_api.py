@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from contextlib import redirect_stdout
+import io
 import unittest
 
 from campsite_watch.api import ApiHandler
+from campsite_watch.api import _matches_query
 from campsite_watch.api import _ranges_overlap
 from campsite_watch.api import _validate_refresh_query
 
@@ -12,8 +15,24 @@ class ApiBehaviorTest(unittest.TestCase):
         handler = object.__new__(ApiHandler)
         handler.api_token = ""
         handler.headers = {}
+        handler.client_address = ("127.0.0.1", 12345)
 
         self.assertFalse(handler._authorized())
+
+    def test_auth_rate_limit_after_failed_attempts(self) -> None:
+        handler = object.__new__(ApiHandler)
+        handler.headers = {}
+        handler.client_address = ("127.0.0.1", 12345)
+        handler.auth_failures = {}
+
+        with redirect_stdout(io.StringIO()):
+            for _ in range(6):
+                handler._record_auth_failure()
+
+        self.assertTrue(handler._auth_rate_limited())
+
+        handler._record_auth_success()
+        self.assertFalse(handler._auth_rate_limited())
 
     def test_checked_months_survive_zero_result_refresh(self) -> None:
         handler = object.__new__(ApiHandler)
@@ -67,6 +86,16 @@ class ApiBehaviorTest(unittest.TestCase):
                 }
             ),
         )
+
+    def test_exact_date_query_normalizes_one_sided_date(self) -> None:
+        item = {
+            "date": "2026-07-10",
+            "end": "2026-07-12",
+            "distanceMiles": 10,
+        }
+
+        self.assertTrue(_matches_query(item, {"startDate": ["2026-07-10"]}))
+        self.assertFalse(_matches_query(item, {"startDate": ["2026-07-12"]}))
 
 
 if __name__ == "__main__":

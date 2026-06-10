@@ -139,7 +139,7 @@ h2 {
 
 .side-panel {
   display: flex;
-  width: min(100%, 820px);
+  width: min(100%, 1040px);
   min-height: 0;
   flex-direction: column;
   gap: 14px;
@@ -308,6 +308,15 @@ select:focus {
   padding: 10px;
 }
 
+.timing-card:not(.is-active) {
+  opacity: 0.58;
+}
+
+.timing-card:not(.is-active) input,
+.timing-card:not(.is-active) select {
+  cursor: not-allowed;
+}
+
 .timing-heading {
   display: grid;
   gap: 2px;
@@ -338,6 +347,10 @@ select:focus {
   border-radius: 8px;
   background: var(--surface);
   padding: 4px;
+}
+
+.timing-mode {
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .segmented input {
@@ -371,6 +384,13 @@ button:disabled {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
+}
+
+.refresh-auth {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 10px;
 }
 
 .results {
@@ -566,6 +586,12 @@ button:disabled {
 
   .layout {
     min-height: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .date-grid {
+    grid-template-columns: 1fr;
   }
 }
 

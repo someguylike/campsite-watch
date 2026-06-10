@@ -88,7 +88,7 @@ def main() -> None:
     parser.add_argument("--api-host", default="127.0.0.1")
     parser.add_argument("--api-port", default=8787, type=int)
     parser.add_argument("--results-json", default="./data/latest-results.json", type=Path)
-    parser.add_argument("--allowed-origin", default="*")
+    parser.add_argument("--allowed-origin", default="https://someguylike.github.io")
     parser.add_argument(
         "--api-password",
         default=os.environ.get("CAMPSITE_WATCH_API_PASSWORD", os.environ.get("CAMPSITE_WATCH_API_TOKEN", "")),

@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 from secrets import compare_digest
 import threading
+import time
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -24,6 +25,9 @@ MAX_EXACT_STAY_NIGHTS = 14
 ALLOWED_MILE_DISTANCES = {20, 30, 50, 80}
 ALLOWED_DRIVE_MINUTES = {60, 120, 180, 240, 300}
 DEFAULT_ORIGIN = (47.5707, -122.2221)
+AUTH_FAILURE_WINDOW_SECONDS = 600
+AUTH_FAILURE_LIMIT = 6
+AUTH_RETRY_AFTER_SECONDS = 60
 ZIP_COORDINATES = {
     "98040": DEFAULT_ORIGIN,
 }
@@ -145,9 +149,10 @@ PARKS = [
 
 class ApiHandler(BaseHTTPRequestHandler):
     results_path = Path("./data/latest-results.json")
-    allowed_origin = "*"
+    allowed_origin = "https://someguylike.github.io"
     api_token = ""
     refresh_lock = threading.Lock()
+    auth_failures: dict[str, list[float]] = {}
 
     def do_OPTIONS(self) -> None:
         if not self._origin_allowed():
@@ -175,13 +180,13 @@ class ApiHandler(BaseHTTPRequestHandler):
             return
 
         if not self.results_path.exists():
-            self._send_json(503, {"error": "no_results", "detail": "latest results file does not exist"})
+            self._send_json(503, {"error": "no_results", "detail": "No saved results are available yet."})
             return
 
         try:
             payload = json.loads(self.results_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as error:
-            self._send_json(503, {"error": "bad_results", "detail": str(error)})
+        except (OSError, json.JSONDecodeError):
+            self._send_json(503, {"error": "bad_results", "detail": "Saved results could not be read."})
             return
 
         if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
@@ -202,9 +207,15 @@ class ApiHandler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": "not_found"})
             return
 
+        if self._auth_rate_limited():
+            self._send_json(429, {"error": "rate_limited", "detail": "Too many failed refresh password attempts."})
+            return
+
         if not self._authorized():
+            self._record_auth_failure()
             self._send_json(401, {"error": "unauthorized"})
             return
+        self._record_auth_success()
 
         query = parse_qs(parsed_url.query)
         validation_error = _validate_refresh_query(query)
@@ -266,6 +277,28 @@ class ApiHandler(BaseHTTPRequestHandler):
         bearer = auth[len(prefix) :] if auth.startswith(prefix) else ""
         return compare_digest(bearer, self.api_token)
 
+    def _auth_client_key(self) -> str:
+        forwarded = self.headers.get("X-Forwarded-For", "")
+        if forwarded:
+            return forwarded.split(",", 1)[0].strip()
+        return self.client_address[0] if self.client_address else "unknown"
+
+    def _auth_rate_limited(self) -> bool:
+        key = self._auth_client_key()
+        now = time.monotonic()
+        failures = [t for t in self.auth_failures.get(key, []) if now - t < AUTH_FAILURE_WINDOW_SECONDS]
+        self.auth_failures[key] = failures
+        return len(failures) >= AUTH_FAILURE_LIMIT
+
+    def _record_auth_failure(self) -> None:
+        key = self._auth_client_key()
+        failures = self.auth_failures.setdefault(key, [])
+        failures.append(time.monotonic())
+        print(f"Failed refresh auth from {key}", flush=True)
+
+    def _record_auth_success(self) -> None:
+        self.auth_failures.pop(self._auth_client_key(), None)
+
     def _origin_allowed(self) -> bool:
         origin = self.headers.get("Origin")
         return not origin or self.allowed_origin == "*" or origin == self.allowed_origin
@@ -304,8 +337,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             return {"status": "idle", "message": "No refresh has been triggered yet."}
         try:
             payload = json.loads(status_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as error:
-            return {"status": "error", "message": f"Could not read refresh status: {error}"}
+        except (OSError, json.JSONDecodeError):
+            return {"status": "error", "message": "Could not read refresh status."}
         return payload if isinstance(payload, dict) else {"status": "error", "message": "Bad refresh status file."}
 
     def _run_refresh(self, query: dict[str, list[str]]) -> None:
@@ -346,13 +379,13 @@ class ApiHandler(BaseHTTPRequestHandler):
                     requested_months,
                 )
             else:
-                _write_refresh_status(status_path, "error", f"Reservation site returned HTTP {error.code}.", requested_months)
+                _write_refresh_status(status_path, "error", "Reservation site returned an error.", requested_months)
             return
-        except (TimeoutError, URLError, OSError, ValueError) as error:
-            _write_refresh_status(status_path, "error", f"Refresh failed: {error}", requested_months)
+        except (TimeoutError, URLError, OSError, ValueError):
+            _write_refresh_status(status_path, "error", "Refresh failed before new results could be saved.", requested_months)
             return
-        except Exception as error:
-            _write_refresh_status(status_path, "error", f"Unexpected refresh failure: {error}", requested_months)
+        except Exception:
+            _write_refresh_status(status_path, "error", "Unexpected refresh failure.", requested_months)
             return
         finally:
             self.refresh_lock.release()
@@ -868,6 +901,10 @@ def _matches_query(item: dict[str, object], query: dict[str, list[str]]) -> bool
     if start_date or end_date:
         selected_start = start_date or end_date
         selected_end = end_date or start_date
+        if selected_start and selected_end and selected_end <= selected_start:
+            parsed_start = _parse_iso_date(selected_start)
+            if parsed_start:
+                selected_end = (parsed_start + timedelta(days=1)).isoformat()
         if not (item_start <= selected_start and item_end >= selected_end):
             return False
     elif month and month != "any":
@@ -996,7 +1033,7 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=8787, type=int)
     parser.add_argument("--results", default="./data/latest-results.json", type=Path)
-    parser.add_argument("--allowed-origin", default="*")
+    parser.add_argument("--allowed-origin", default="https://someguylike.github.io")
     parser.add_argument(
         "--api-password",
         default=os.environ.get("CAMPSITE_WATCH_API_PASSWORD", os.environ.get("CAMPSITE_WATCH_API_TOKEN", "")),

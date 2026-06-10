@@ -2,7 +2,6 @@ const ORIGIN = "98040";
 const ORIGIN_COORDS = [47.5707, -122.2221];
 const DEFAULT_API_BASE_URL = "https://nampham-server.tail74e1b3.ts.net";
 const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
-const API_PASSWORD_STORAGE_KEY = "campsite-watch.apiPassword";
 const routeCache = new Map();
 
 const parks = {
@@ -356,10 +355,16 @@ const startDateInput = document.querySelector("#start-date-input");
 const endDateInput = document.querySelector("#end-date-input");
 const monthFilter = document.querySelector("#month-filter");
 const searchNote = document.querySelector("#search-note");
+const searchButton = document.querySelector("#search-button");
 const refreshButton = document.querySelector("#refresh-button");
+const refreshAuth = document.querySelector("#refresh-auth");
+const nasPasswordInput = document.querySelector("#nas-password-input");
+const timingModeInputs = [...document.querySelectorAll("input[name='timingMode']")];
+const timingCards = [...document.querySelectorAll("[data-mode-card]")];
 
 populateDateFilters();
 populateDistanceOptions();
+updateTimingMode();
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -372,9 +377,17 @@ refreshButton.addEventListener("click", async () => {
 
 distanceMode.addEventListener("change", populateDistanceOptions);
 
-startDateInput.addEventListener("change", syncDateRange);
+timingModeInputs.forEach((input) => input.addEventListener("change", updateTimingMode));
 
-endDateInput.addEventListener("change", syncDateRange);
+startDateInput.addEventListener("change", () => {
+  setTimingMode("exact");
+  syncDateRange();
+});
+
+endDateInput.addEventListener("change", () => {
+  setTimingMode("exact");
+  syncDateRange();
+});
 
 function syncDateRange() {
   if (startDateInput.value || endDateInput.value) {
@@ -389,6 +402,7 @@ function syncDateRange() {
 }
 
 monthFilter.addEventListener("change", () => {
+  setTimingMode("flexible");
   if (monthFilter.value !== "any") {
     startDateInput.value = "";
     endDateInput.value = "";
@@ -434,53 +448,55 @@ document.querySelector("#sync-button")?.addEventListener("click", () => {
   const trimmed = next.trim().replace(/\/+$/, "");
   if (trimmed) {
     window.localStorage.setItem(API_BASE_STORAGE_KEY, trimmed);
-    window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
     toast("NAS worker URL saved. Password is only needed for refresh.");
   } else {
     window.localStorage.removeItem(API_BASE_STORAGE_KEY);
-    window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
     toast("NAS worker disconnected.");
   }
   runSearch();
 });
 
 async function runSearch({ queryNas = true } = {}) {
-  await syncStateFromInputs();
-  const apiBaseUrl = apiBase();
-  if (queryNas && apiBaseUrl) {
-    searchNote.textContent = "Loading saved NAS results...";
-  }
-  const nasResult = queryNas && apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
-  if (nasResult?.error === "password_required") {
-    state.results = [];
-    state.coverageStatus = "unknown";
-    searchNote.textContent = "Refresh requires the NAS password. Search can still read saved results without it.";
-  } else if (nasResult?.error === "unauthorized") {
-    window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
-    state.results = [];
-    state.coverageStatus = "unknown";
-    searchNote.textContent = "Saved NAS results are not readable from this browser.";
-  } else if (nasResult) {
-    if (nasResult.error) {
+  setSearchBusy(true);
+  try {
+    await syncStateFromInputs();
+    const apiBaseUrl = apiBase();
+    if (queryNas && apiBaseUrl) {
+      searchNote.textContent = "Loading saved NAS results...";
+    }
+    const nasResult = queryNas && apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
+    if (nasResult?.error === "password_required") {
+      state.results = [];
+      state.coverageStatus = "unknown";
+      searchNote.textContent = "Refresh requires the NAS password. Search can still read saved results without it.";
+    } else if (nasResult?.error === "unauthorized") {
+      state.results = [];
+      state.coverageStatus = "unknown";
+      searchNote.textContent = "Saved NAS results are not readable from this browser.";
+    } else if (nasResult) {
+      if (nasResult.error) {
+        state.coverageStatus = "fallback";
+        state.results = await prepareResults(availability);
+        searchNote.textContent = `${nasErrorMessage(nasResult)} Showing the latest saved website snapshot.`;
+      } else {
+        state.coverageStatus = nasResult.coverageStatus || "checked";
+        state.results = await prepareResults(nasResult.results, nasResult.checkedMonths);
+        searchNote.textContent = nasResult.note;
+      }
+    } else {
       state.coverageStatus = "fallback";
       state.results = await prepareResults(availability);
-      searchNote.textContent = `${nasErrorMessage(nasResult)} Showing the latest saved website snapshot.`;
-    } else {
-      state.coverageStatus = nasResult.coverageStatus || "checked";
-      state.results = await prepareResults(nasResult.results, nasResult.checkedMonths);
-      searchNote.textContent = nasResult.note;
+      searchNote.textContent = !queryNas
+        ? "Showing the saved website snapshot. Click Search campsites to query the NAS worker."
+        : apiBaseUrl
+        ? "NAS worker is unavailable or blocked. Showing the latest saved website snapshot."
+        : "Showing the saved website snapshot.";
     }
-  } else {
-    state.coverageStatus = "fallback";
-    state.results = await prepareResults(availability);
-    searchNote.textContent = !queryNas
-      ? "Showing the saved website snapshot. Click Search campsites to query the NAS worker."
-      : apiBaseUrl
-      ? "NAS worker is unavailable or blocked. Showing the latest saved website snapshot."
-      : "Showing the saved website snapshot.";
-  }
 
-  renderResults(state.results);
+    renderResults(state.results);
+  } finally {
+    setSearchBusy(false);
+  }
 }
 
 async function syncStateFromInputs() {
@@ -491,7 +507,7 @@ async function syncStateFromInputs() {
   const selectedRange = normalizedSelectedDateRange();
   state.startDate = selectedRange.start;
   state.endDate = selectedRange.end;
-  state.month = monthFilter.value;
+  state.month = timingMode() === "flexible" ? monthFilter.value : "any";
 
   if (zip) {
     state.origin = await resolveOrigin(zip);
@@ -513,17 +529,12 @@ async function triggerRefresh() {
 
   const result = await postNasRefresh(apiBaseUrl);
   if (result?.error === "password_required") {
+    showRefreshAuth();
     searchNote.textContent = "Enter the NAS password to refresh availability.";
   } else if (result?.error === "unauthorized") {
-    window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
-    const password = askForNasPassword();
-    if (password) {
-      window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
-      refreshButton.disabled = false;
-      refreshButton.textContent = "Refresh availability";
-      return triggerRefresh();
-    }
-    searchNote.textContent = "Enter the NAS password to refresh availability.";
+    showRefreshAuth();
+    nasPasswordInput.value = "";
+    searchNote.textContent = "That refresh password did not work. Enter it again and retry.";
   } else if (result) {
     if (result.error) {
       searchNote.textContent = nasErrorMessage(result);
@@ -542,20 +553,34 @@ async function triggerRefresh() {
 
 async function prepareResults(items, checkedMonths = null) {
   state.dataMonths = Array.isArray(checkedMonths) && checkedMonths.length ? checkedMonths : dataMonths(items);
-  const enriched = await Promise.all(
-    items
-      .map(withFilteredSites)
-      .filter((item) => item.availableTentSites > 0)
-      .map((item) => ({
-        ...item,
-        airDistanceMiles: distanceMiles(state.origin, item),
-      }))
-      .map(withRouteEstimate),
-  );
+  const routeCandidates = items
+    .map(withFilteredSites)
+    .filter((item) => item.availableTentSites > 0)
+    .map((item) => ({
+      ...item,
+      airDistanceMiles: distanceMiles(state.origin, item),
+    }))
+    .filter(matchesSearchBeforeRoute);
+
+  const enriched = await mapLimit(routeCandidates, 6, withRouteEstimate);
 
   return enriched
     .filter(matchesSearch)
     .sort((a, b) => sortDistance(a) - sortDistance(b) || a.date.localeCompare(b.date));
+}
+
+async function mapLimit(items, limit, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }
 
 function withFilteredSites(item) {
@@ -613,9 +638,8 @@ async function fetchNasJson(url, options = {}, { requireAuth = false } = {}) {
     timeout = window.setTimeout(() => controller.abort(), 12000);
     const headers = { Accept: "application/json", ...(options.headers || {}) };
     if (requireAuth) {
-      const password = apiPassword() || askForNasPassword();
+      const password = apiPassword();
       if (!password) return { error: "password_required" };
-      window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
       headers.Authorization = `Bearer ${password}`;
     }
     const response = await fetch(url.toString(), { ...options, headers, signal: controller.signal });
@@ -741,6 +765,23 @@ function matchesSearch(item) {
         ? item.driveDurationMinutes <= state.maxDriveMinutes
         : item.airDistanceMiles <= state.maxDistance
       : distanceValueMiles(item) <= state.maxDistance;
+
+  return (
+    dateRangesOverlap(item.date, item.end, windowRange.start, windowRange.end) &&
+    distanceMatches &&
+    (!hasSelectedDateRange() || containsSelectedDateRange(item)) &&
+    (hasSelectedDateRange() || monthMatches)
+  );
+}
+
+function matchesSearchBeforeRoute(item) {
+  const monthMatches =
+    state.month === "any" || item.date.startsWith(state.month) || item.end.startsWith(state.month);
+  const windowRange = searchWindow();
+  const distanceMatches =
+    distanceMode.value === "hours"
+      ? item.airDistanceMiles <= state.maxDistance
+      : item.airDistanceMiles <= state.maxDistance;
 
   return (
     dateRangesOverlap(item.date, item.end, windowRange.start, windowRange.end) &&
@@ -888,11 +929,40 @@ function apiBase() {
 }
 
 function apiPassword() {
-  return window.sessionStorage.getItem(API_PASSWORD_STORAGE_KEY) || "";
+  return nasPasswordInput.value.trim();
 }
 
-function askForNasPassword(message = "NAS password") {
-  return window.prompt(message)?.trim() || "";
+function setSearchBusy(isBusy) {
+  searchButton.disabled = isBusy;
+  searchButton.textContent = isBusy ? "Searching..." : "Search campsites";
+}
+
+function showRefreshAuth() {
+  refreshAuth.hidden = false;
+  nasPasswordInput.focus();
+}
+
+function timingMode() {
+  return timingModeInputs.find((input) => input.checked)?.value || "flexible";
+}
+
+function setTimingMode(mode) {
+  const input = timingModeInputs.find((item) => item.value === mode);
+  if (input && !input.checked) {
+    input.checked = true;
+  }
+  updateTimingMode();
+}
+
+function updateTimingMode() {
+  const mode = timingMode();
+  timingCards.forEach((card) => {
+    const active = card.dataset.modeCard === mode;
+    card.classList.toggle("is-active", active);
+    card.querySelectorAll("input, select").forEach((control) => {
+      control.disabled = !active;
+    });
+  });
 }
 
 function formatDateTime(value) {
@@ -924,6 +994,9 @@ function selectedDateRange() {
 }
 
 function normalizedSelectedDateRange() {
+  if (timingMode() !== "exact") {
+    return { start: "", end: "" };
+  }
   const start = startDateInput.value || (endDateInput.value ? addDaysIso(endDateInput.value, -1) : "");
   const end = endDateInput.value || (start ? addDaysIso(start, 1) : "");
 
@@ -968,19 +1041,19 @@ function renderResults(items) {
             <div>
               <div class="park-title-row">
                 <h2 class="park-name">
-                  <a href="${parkInfoUrl(firstItem)}" target="_blank" rel="noreferrer">${escapeHtml(group.park)}</a>
+                  <a href="${escapeHtml(safeExternalUrl(parkInfoUrl(firstItem), "https://parks.wa.gov/"))}" target="_blank" rel="noreferrer">${escapeHtml(group.park)}</a>
                 </h2>
-                <a class="park-title-link" href="${googleMapsPlaceUrl(firstItem)}" target="_blank" rel="noreferrer">Google Maps</a>
+                <a class="park-title-link" href="${escapeHtml(googleMapsPlaceUrl(firstItem))}" target="_blank" rel="noreferrer">Google Maps</a>
                 ${accessNote(firstItem) ? `<span class="access-badge">${escapeHtml(accessNote(firstItem))}</span>` : ""}
               </div>
-              <div class="meta">${escapeHtml(locationText(firstItem))} · ${distanceText(firstItem)} from ${escapeHtml(state.origin.label)}</div>
+              <div class="meta">${escapeHtml(locationText(firstItem))} · ${escapeHtml(distanceText(firstItem))} from ${escapeHtml(state.origin.label)}</div>
             </div>
             <div class="badge">${weekends} weekend${weekends === 1 ? "" : "s"}</div>
           </div>
           <div class="weekend-list">
             ${group.items.map(renderWeekendRow).join("")}
           </div>
-          <a class="directions-link park-directions-link" href="${directionsUrl(firstItem)}" target="_blank" rel="noreferrer">Directions</a>
+          <a class="directions-link park-directions-link" href="${escapeHtml(directionsUrl(firstItem))}" target="_blank" rel="noreferrer">Directions</a>
         </article>
       `;
     })
@@ -1007,13 +1080,14 @@ function renderWeekendRow(item) {
         <div>
           <h3>${formatDate(item.date)}-${formatDate(item.end)}</h3>
           <p>${stayLabel(item)}</p>
+          <p>${sampleSiteText(item)}</p>
         </div>
         <span class="weekend-site-count">${item.availableTentSites} sites</span>
       </div>
       <ul class="site-list">${renderSiteLinks(item)}</ul>
       <div class="card-actions">
         <div class="link-group">
-          <a class="directions-link reserve-link" href="${reservationUrl(item, firstSite)}" target="_blank" rel="noreferrer">${reservationLabel(item, firstSite)}</a>
+          <a class="directions-link reserve-link" href="${escapeHtml(reservationUrl(item, firstSite))}" target="_blank" rel="noreferrer">${reservationLabel(item, firstSite)}</a>
         </div>
         <span class="status-line">1 tent · ${state.partySize} people</span>
       </div>
@@ -1026,7 +1100,7 @@ function renderSiteLinks(item) {
     .map((site) => {
       const directSite = hasDistinctSiteReservationUrl(item, site);
       const title = directSite ? "Open booking with this campsite selected" : "Open this park and weekend";
-      return `<li><a class="site-chip${directSite ? " direct-site" : ""}" href="${reservationUrl(item, site)}" target="_blank" rel="noreferrer" title="${title}">${escapeHtml(site[0])} ${escapeHtml(site[1])}</a></li>`;
+      return `<li><a class="site-chip${directSite ? " direct-site" : ""}" href="${escapeHtml(reservationUrl(item, site))}" target="_blank" rel="noreferrer" title="${escapeHtml(title)}">${escapeHtml(site[0])} ${escapeHtml(site[1])}</a></li>`;
     })
     .join("");
 }
@@ -1077,13 +1151,24 @@ function locationText(item) {
 }
 
 function parkInfoUrl(item) {
-  if (item.parkUrl) return item.parkUrl;
+  if (item.parkUrl) return safeExternalUrl(item.parkUrl, "https://parks.wa.gov/");
   return `https://parks.wa.gov/find-parks/state-parks/${parkSlug(item.park)}`;
 }
 
 function accessNote(item) {
-  if (item.accessNote) return item.accessNote;
+  if (item.accessNote) return String(item.accessNote);
   return item.park === "Blake Island State Park" ? "Water access only" : "";
+}
+
+function safeExternalUrl(value, fallback) {
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== "https:") return fallback;
+    const allowedHosts = new Set(["parks.wa.gov", "www.google.com", "washington.goingtocamp.com"]);
+    return allowedHosts.has(url.hostname) ? url.toString() : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function parkSlug(name) {
@@ -1196,7 +1281,14 @@ function nightsBetween(start, end) {
 }
 
 function reservationLabel(item, site) {
-  return hasDistinctSiteReservationUrl(item, site) ? "Open selected site" : "Open booking";
+  return hasDistinctSiteReservationUrl(item, site) ? "Open selected site" : "Open booking for this weekend";
+}
+
+function sampleSiteText(item) {
+  const shown = Array.isArray(item.sampleSites) ? item.sampleSites.length : 0;
+  const total = Number(item.availableTentSites || 0);
+  if (!shown || shown >= total) return "Available sites";
+  return `Showing ${shown} example sites of ${total} available`;
 }
 
 function siteMapId(item, site) {
@@ -1257,4 +1349,8 @@ function toast(message) {
   window.setTimeout(() => node.remove(), 2400);
 }
 
-runSearch();
+renderInitialState();
+
+function renderInitialState() {
+  resultsEl.innerHTML = `<article class="result-card"><h2>Ready to search</h2><p class="meta">Choose your trip details, then search saved NAS availability.</p></article>`;
+}

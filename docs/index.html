@@ -54,13 +54,18 @@
 
           <fieldset class="timing-fieldset">
             <legend>Trip timing</legend>
-            <p class="field-help">Use exact dates for a specific stay, or pick a flexible month to search every Friday-to-Sunday weekend.</p>
+            <div class="segmented timing-mode" role="radiogroup" aria-label="Trip timing mode">
+              <input id="mode-flexible" name="timingMode" type="radio" value="flexible" checked />
+              <label for="mode-flexible">Flexible month</label>
+              <input id="mode-exact" name="timingMode" type="radio" value="exact" />
+              <label for="mode-exact">Exact dates</label>
+            </div>
 
             <div class="timing-layout">
-              <div class="timing-card">
+              <div class="timing-card" data-mode-card="exact">
                 <div class="timing-heading">
                   <strong>Exact stay</strong>
-                  <span>Best when your dates are fixed</span>
+                  <span>Check-in to check-out</span>
                 </div>
                 <div class="filter-grid date-grid">
                   <label class="field">
@@ -75,7 +80,7 @@
                 </div>
               </div>
 
-              <div class="timing-card">
+              <div class="timing-card" data-mode-card="flexible">
                 <div class="timing-heading">
                   <strong>Flexible month</strong>
                   <span>Search weekend stays in that month</span>
@@ -108,6 +113,12 @@
           <div class="button-row">
             <button id="search-button" type="submit">Search campsites</button>
             <button id="refresh-button" class="secondary-button" type="button">Refresh availability</button>
+          </div>
+          <div id="refresh-auth" class="refresh-auth" hidden>
+            <label class="field">
+              <span>Refresh password</span>
+              <input id="nas-password-input" type="password" autocomplete="current-password" />
+            </label>
           </div>
           <p id="search-note" class="field-help">
             Search reads the latest saved NAS results. Refresh asks the NAS to check live availability and requires the password.
