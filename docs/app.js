@@ -342,6 +342,7 @@ const state = {
   month: "any",
   dataMonths: [],
   coverageStatus: "unknown",
+  directionFilter: "all",
   results: [],
 };
 
@@ -466,6 +467,7 @@ async function runSearch({ queryNas = true } = {}) {
   setSearchBusy(true);
   try {
     await syncStateFromInputs();
+    state.directionFilter = "all";
     const apiBaseUrl = apiBase();
     if (queryNas && apiBaseUrl) {
       searchNote.textContent = "Loading saved NAS results...";
@@ -566,7 +568,9 @@ async function prepareResults(items, checkedMonths = null) {
     .map((item) => ({
       ...item,
       airDistanceMiles: distanceMiles(state.origin, item),
+      bearingDegrees: bearingDegrees(state.origin, item),
     }))
+    .map(withDirection)
     .filter(matchesSearchBeforeRoute);
 
   const enriched = await mapLimit(routeCandidates, 6, withRouteEstimate);
@@ -1043,12 +1047,16 @@ function renderResults(items) {
     return;
   }
 
-  resultsEl.innerHTML = groupResultsByPark(items)
+  const visibleItems = state.directionFilter === "all"
+    ? items
+    : items.filter((item) => item.direction === state.directionFilter);
+  const body = visibleItems.length
+    ? groupResultsByPark(visibleItems)
     .map((group) => {
       const firstItem = group.items[0];
       const weekends = group.items.length;
       return `
-        <article class="result-card" data-park="${escapeHtml(group.park)}">
+        <article id="${parkDomId(group.park)}" class="result-card" data-park="${escapeHtml(group.park)}">
           <div class="result-header">
             <div>
               <div class="park-title-row">
@@ -1056,6 +1064,10 @@ function renderResults(items) {
                   <a href="${escapeHtml(safeExternalUrl(parkInfoUrl(firstItem), "https://parks.wa.gov/"))}" target="_blank" rel="noreferrer">${escapeHtml(group.park)}</a>
                 </h2>
                 <a class="park-title-link" href="${escapeHtml(googleMapsPlaceUrl(firstItem))}" target="_blank" rel="noreferrer">Google Maps</a>
+                <span class="direction-chip" title="${escapeHtml(directionTitle(firstItem))}">
+                  <span class="direction-arrow" style="transform: rotate(${Math.round(firstItem.bearingDegrees || 0)}deg)">↑</span>
+                  ${escapeHtml(firstItem.direction || "")}
+                </span>
                 ${accessNote(firstItem) ? `<span class="access-badge">${escapeHtml(accessNote(firstItem))}</span>` : ""}
               </div>
               <div class="meta">${escapeHtml(locationText(firstItem))} · ${escapeHtml(distanceText(firstItem))} from ${escapeHtml(state.origin.label)}</div>
@@ -1069,8 +1081,11 @@ function renderResults(items) {
         </article>
       `;
     })
-    .join("");
+    .join("")
+    : `<article class="result-card"><h2>No ${escapeHtml(directionName(state.directionFilter))} results</h2><p class="meta">Choose another direction or clear the direction filter.</p></article>`;
 
+  resultsEl.innerHTML = `${renderProximitySummary(items)}${body}`;
+  bindProximityControls();
 }
 
 function groupResultsByPark(items) {
@@ -1082,6 +1097,79 @@ function groupResultsByPark(items) {
     groups.get(item.park).items.push(item);
   }
   return [...groups.values()];
+}
+
+function renderProximitySummary(items) {
+  const counts = directionCounts(items);
+  const chips = ["all", "N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    .filter((direction) => direction === "all" || counts.get(direction))
+    .map((direction) => {
+      const active = state.directionFilter === direction;
+      const count = direction === "all" ? new Set(items.map((item) => item.park)).size : counts.get(direction);
+      return `<button class="direction-filter${active ? " is-active" : ""}" type="button" data-direction="${direction}">${escapeHtml(directionName(direction))} <span>${count}</span></button>`;
+    })
+    .join("");
+
+  return `
+    <section class="proximity-panel" aria-label="Direction from origin">
+      <div>
+        <h2>Direction from ${escapeHtml(state.origin.label)}</h2>
+        <p class="meta">Use this as a quick mental map of where the available parks sit relative to your starting point.</p>
+      </div>
+      ${renderCompassPlot(items)}
+      <div class="direction-filters">${chips}</div>
+    </section>
+  `;
+}
+
+function renderCompassPlot(items) {
+  const parksByName = groupResultsByPark(items).map((group) => group.items[0]);
+  const maxDistance = Math.max(1, ...parksByName.map((item) => distanceValueMiles(item) || item.airDistanceMiles || 0));
+  const points = parksByName
+    .map((item) => {
+      const radians = ((item.bearingDegrees || 0) - 90) * Math.PI / 180;
+      const distance = Math.min(1, (distanceValueMiles(item) || item.airDistanceMiles || 0) / maxDistance);
+      const radius = 18 + distance * 58;
+      const x = 90 + Math.cos(radians) * radius;
+      const y = 90 + Math.sin(radians) * radius;
+      const size = Math.min(9, 4 + Math.sqrt(Math.max(1, Number(item.availableTentSites || 1))) / 2);
+      return `<a href="#${parkDomId(item.park)}" aria-label="${escapeHtml(item.park)} ${escapeHtml(item.direction || "")}"><circle class="compass-point" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${size.toFixed(1)}"><title>${escapeHtml(item.park)} · ${escapeHtml(item.direction || "")} · ${escapeHtml(distanceText(item))}</title></circle></a>`;
+    })
+    .join("");
+
+  return `
+    <svg class="compass-plot" viewBox="0 0 180 180" role="img" aria-label="Available parks by direction and distance">
+      <circle class="compass-ring" cx="90" cy="90" r="72"></circle>
+      <circle class="compass-ring" cx="90" cy="90" r="45"></circle>
+      <line class="compass-axis" x1="90" y1="12" x2="90" y2="168"></line>
+      <line class="compass-axis" x1="12" y1="90" x2="168" y2="90"></line>
+      <text x="90" y="18" text-anchor="middle">N</text>
+      <text x="90" y="172" text-anchor="middle">S</text>
+      <text x="166" y="86" text-anchor="middle">E</text>
+      <text x="14" y="86" text-anchor="middle">W</text>
+      <circle class="origin-point" cx="90" cy="90" r="5"></circle>
+      ${points}
+    </svg>
+  `;
+}
+
+function bindProximityControls() {
+  resultsEl.querySelectorAll("[data-direction]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.directionFilter = button.dataset.direction || "all";
+      renderResults(state.results);
+    });
+  });
+}
+
+function directionCounts(items) {
+  const parksByDirection = new Map();
+  for (const group of groupResultsByPark(items)) {
+    const direction = group.items[0].direction || "N";
+    if (!parksByDirection.has(direction)) parksByDirection.set(direction, new Set());
+    parksByDirection.get(direction).add(group.park);
+  }
+  return new Map([...parksByDirection.entries()].map(([direction, parks]) => [direction, parks.size]));
 }
 
 function renderWeekendRow(item) {
@@ -1232,6 +1320,49 @@ function distanceMiles(origin, item) {
     Math.sin(dlat / 2) ** 2 +
     Math.cos(origin.lat * radians) * Math.cos(item.lat * radians) * Math.sin(dlon / 2) ** 2;
   return 3958.8 * 2 * Math.asin(Math.sqrt(a));
+}
+
+function bearingDegrees(origin, item) {
+  const originLat = origin.lat * Math.PI / 180;
+  const itemLat = item.lat * Math.PI / 180;
+  const deltaLon = (item.lon - origin.lon) * Math.PI / 180;
+  const y = Math.sin(deltaLon) * Math.cos(itemLat);
+  const x = Math.cos(originLat) * Math.sin(itemLat) - Math.sin(originLat) * Math.cos(itemLat) * Math.cos(deltaLon);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function withDirection(item) {
+  const direction = cardinalDirection(item.bearingDegrees);
+  return { ...item, direction };
+}
+
+function cardinalDirection(bearing) {
+  const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return directions[Math.round(((bearing || 0) % 360) / 45) % 8];
+}
+
+function directionName(direction) {
+  return (
+    {
+      all: "All directions",
+      N: "North",
+      NE: "Northeast",
+      E: "East",
+      SE: "Southeast",
+      S: "South",
+      SW: "Southwest",
+      W: "West",
+      NW: "Northwest",
+    }[direction] || direction
+  );
+}
+
+function directionTitle(item) {
+  return `${directionName(item.direction)} of ${state.origin.label}`;
+}
+
+function parkDomId(name) {
+  return `park-${String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 }
 
 function distanceValueMiles(item) {

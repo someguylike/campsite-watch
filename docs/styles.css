@@ -398,6 +398,84 @@ button:disabled {
   gap: 12px;
 }
 
+.proximity-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: none;
+  padding: 14px;
+}
+
+.proximity-panel h2 {
+  margin-bottom: 3px;
+}
+
+.compass-plot {
+  width: min(100%, 360px);
+  aspect-ratio: 1;
+  justify-self: center;
+}
+
+.compass-ring,
+.compass-axis {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.compass-plot text {
+  fill: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.origin-point {
+  fill: var(--text);
+}
+
+.compass-point {
+  fill: var(--accent);
+  opacity: 0.86;
+  stroke: white;
+  stroke-width: 2;
+}
+
+.compass-point:hover {
+  fill: var(--good);
+}
+
+.direction-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.direction-filter {
+  min-height: 34px;
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 6px 9px;
+}
+
+.direction-filter span {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.direction-filter.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.direction-filter.is-active span {
+  color: white;
+}
+
 .result-card {
   box-shadow: none;
   padding: 14px;
@@ -448,6 +526,26 @@ button:disabled {
   font-size: 0.74rem;
   font-weight: 850;
   padding: 3px 8px;
+}
+
+.direction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgb(23 107 115 / 28%);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.74rem;
+  font-weight: 850;
+  padding: 3px 8px;
+}
+
+.direction-arrow {
+  display: inline-block;
+  font-size: 0.78rem;
+  line-height: 1;
+  transform-origin: center;
 }
 
 .park-title-link:hover {
