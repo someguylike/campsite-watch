@@ -464,9 +464,15 @@ async function runSearch() {
     state.coverageStatus = "unknown";
     searchNote.textContent = "Enter the NAS password to query fresh availability.";
   } else if (nasResult) {
-    state.coverageStatus = nasResult.coverageStatus || "checked";
-    state.results = await prepareResults(nasResult.results, nasResult.checkedMonths);
-    searchNote.textContent = nasResult.note;
+    if (nasResult.error) {
+      state.coverageStatus = "fallback";
+      state.results = await prepareResults(availability);
+      searchNote.textContent = `${nasErrorMessage(nasResult)} Showing the latest saved website snapshot.`;
+    } else {
+      state.coverageStatus = nasResult.coverageStatus || "checked";
+      state.results = await prepareResults(nasResult.results, nasResult.checkedMonths);
+      searchNote.textContent = nasResult.note;
+    }
   } else {
     state.coverageStatus = "fallback";
     state.results = await prepareResults(availability);
@@ -520,9 +526,13 @@ async function triggerRefresh() {
     }
     searchNote.textContent = "Enter the NAS password to refresh availability.";
   } else if (result) {
-    searchNote.textContent = refreshMessage(result);
-    await pollRefreshStatus(apiBaseUrl);
-    await runSearch();
+    if (result.error) {
+      searchNote.textContent = nasErrorMessage(result);
+    } else {
+      searchNote.textContent = refreshMessage(result);
+      await pollRefreshStatus(apiBaseUrl);
+      await runSearch();
+    }
   } else {
     searchNote.textContent = "NAS refresh could not be started.";
   }
@@ -568,40 +578,24 @@ function isAdaOnlySite(park, site) {
 
 async function fetchNasResults(apiBaseUrl) {
   const url = nasUrl(apiBaseUrl, "/api/search");
+  const payload = await fetchNasJson(url);
+  if (payload?.error) return payload;
+  if (!payload || !Array.isArray(payload.results)) return { error: "bad_response" };
 
-  try {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 8000);
-    const password = apiPassword() || askForNasPassword();
-    if (!password) return { error: "password_required" };
-    window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
-    const headers = { Accept: "application/json" };
-    headers.Authorization = `Bearer ${password}`;
-    headers["X-Campsite-Watch-Password"] = password;
-    const response = await fetch(url.toString(), { headers, signal: controller.signal });
-    window.clearTimeout(timeout);
-    if (response.status === 401) return { error: "unauthorized" };
-    if (!response.ok) return null;
-    const payload = await response.json();
-    if (!Array.isArray(payload.results)) return null;
-
-    const source = payload.source === "live" ? "Live NAS result" : "Saved NAS fallback";
-    const checked = payload.lastChecked ? ` · last checked ${formatDateTime(payload.lastChecked)}` : "";
-    const checkedMonths = Array.isArray(payload.checkedMonths) ? payload.checkedMonths : dataMonths(payload.results);
-    const requestedMonths = Array.isArray(payload.requestedMonths) ? payload.requestedMonths : [];
-    const missingMonths = requestedMonths.filter((month) => !checkedMonths.includes(month));
-    const coverageNote = missingMonths.length
-      ? ` This saved data has not checked ${missingMonths.map(formatMonth).join(", ")} yet.`
-      : "";
-    return {
-      results: payload.results,
-      checkedMonths,
-      coverageStatus: payload.coverageStatus || "checked",
-      note: `${source}${checked}.${coverageNote}`,
-    };
-  } catch {
-    return null;
-  }
+  const source = payload.source === "live" ? "Live NAS result" : "Saved NAS fallback";
+  const checked = payload.lastChecked ? ` · last checked ${formatDateTime(payload.lastChecked)}` : "";
+  const checkedMonths = Array.isArray(payload.checkedMonths) ? payload.checkedMonths : dataMonths(payload.results);
+  const requestedMonths = Array.isArray(payload.requestedMonths) ? payload.requestedMonths : [];
+  const missingMonths = requestedMonths.filter((month) => !checkedMonths.includes(month));
+  const coverageNote = missingMonths.length
+    ? ` This saved data has not checked ${missingMonths.map(formatMonth).join(", ")} yet.`
+    : "";
+  return {
+    results: payload.results,
+    checkedMonths,
+    coverageStatus: payload.coverageStatus || "checked",
+    note: `${source}${checked}.${coverageNote}`,
+  };
 }
 
 async function postNasRefresh(apiBaseUrl) {
@@ -614,9 +608,10 @@ async function fetchRefreshStatus(apiBaseUrl) {
 }
 
 async function fetchNasJson(url, options = {}) {
+  let timeout = 0;
   try {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 8000);
+    timeout = window.setTimeout(() => controller.abort(), 12000);
     const password = apiPassword() || askForNasPassword();
     if (!password) return { error: "password_required" };
     window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
@@ -626,10 +621,14 @@ async function fetchNasJson(url, options = {}) {
     const response = await fetch(url.toString(), { ...options, headers, signal: controller.signal });
     window.clearTimeout(timeout);
     if (response.status === 401) return { error: "unauthorized" };
-    if (!response.ok) return null;
+    if (!response.ok) return { error: "http", status: response.status };
     return response.json();
-  } catch {
-    return null;
+  } catch (error) {
+    if (timeout) window.clearTimeout(timeout);
+    return {
+      error: error?.name === "AbortError" ? "timeout" : "network",
+      message: error?.message || "",
+    };
   }
 }
 
@@ -666,6 +665,22 @@ function refreshMessage(status) {
     ? ` (${status.requestedMonths.map(formatMonth).join(", ")})`
     : "";
   return `${status.message || "Refresh status updated."}${months}`;
+}
+
+function nasErrorMessage(result) {
+  if (result.error === "timeout") {
+    return "NAS request timed out. Make sure this browser is connected to Tailscale and try again.";
+  }
+  if (result.error === "network") {
+    return "Could not reach the private NAS URL. Connect this browser/device to Tailscale, then try again.";
+  }
+  if (result.error === "http") {
+    return `NAS request failed with HTTP ${result.status}.`;
+  }
+  if (result.error === "bad_response") {
+    return "NAS returned an unexpected response.";
+  }
+  return "NAS refresh could not be started.";
 }
 
 function sleep(ms) {
