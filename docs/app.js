@@ -336,9 +336,9 @@ const adaOnlySiteKeys = new Set([
 const state = {
   origin: zipCoordinates[ORIGIN],
   originQuery: ORIGIN,
-  maxDistance: 30,
-  maxDriveMinutes: 120,
-  partySize: 2,
+  maxDistance: 110,
+  maxDriveMinutes: 180,
+  partySize: 4,
   startDate: "",
   endDate: "",
   month: "any",
@@ -818,7 +818,7 @@ function dateRangesOverlap(startA, endA, startB, endB) {
 }
 
 function populateDistanceOptions() {
-  const defaultValue = distanceMode.value === "miles" ? "30" : "120";
+  const defaultValue = distanceMode.value === "miles" ? "80" : "180";
   const selectedValue = distanceFilter.value || defaultValue;
   const options =
     distanceMode.value === "miles"
