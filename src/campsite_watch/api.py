@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import argparse
 from datetime import date, datetime, timedelta, timezone
+from html import unescape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import math
 import os
 from pathlib import Path
+import re
 from secrets import compare_digest
 import threading
 import time
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import parse_qs, urlencode, urljoin, urlparse
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -397,6 +399,7 @@ class GoingToCampCrawler:
         self.map_label_cache: dict[int, dict[int, str]] = {}
         self.resource_locations: list[dict[str, object]] | None = None
         self.origin_cache: dict[str, tuple[float, float]] = {}
+        self.park_image_cache: dict[str, str] = {}
 
     def search(self, query: dict[str, list[str]]) -> list[dict[str, object]]:
         ranges = _requested_date_ranges(query)
@@ -418,6 +421,7 @@ class GoingToCampCrawler:
                     available_sites = self._available_sites(park, resources, map_labels, start, end, people)
                     if not available_sites:
                         continue
+                    park = self._with_park_media(park)
                     results.append(
                         {
                             **park,
@@ -439,12 +443,12 @@ class GoingToCampCrawler:
         distance = _as_float(_first(query, "distance"), 0)
         miles = _drive_minutes_to_miles(distance) if distance_mode == "hours" and distance > 0 else distance
         if miles <= 0:
-            return [dict(park) for park in PARKS]
+            return [self._with_park_url(dict(park)) for park in PARKS]
 
         origin = self._origin_for_query(query)
         parks_by_id = {}
         for static_park in PARKS:
-            park = dict(static_park)
+            park = self._with_park_url(dict(static_park))
             park["distanceMiles"] = round(
                 _haversine_miles(origin[0], origin[1], _as_float(park.get("lat"), 0), _as_float(park.get("lon"), 0))
             )
@@ -515,13 +519,39 @@ class GoingToCampCrawler:
                 "resourceLocationId": item["resourceLocationId"],
                 "transactionLocationId": item.get("transactionLocationId") or item["resourceLocationId"],
                 "mapId": item["rootMapId"],
-                "parkUrl": str(localized.get("website") or ""),
+                "parkUrl": _official_park_url(name, str(localized.get("website") or "")),
             }
             access_note = _access_note_for_park(name, str(localized.get("description") or ""))
             if access_note:
                 park["accessNote"] = access_note
             parks.append(park)
         return parks
+
+    def _with_park_url(self, park: dict[str, object]) -> dict[str, object]:
+        park.setdefault("parkUrl", _official_park_url(str(park.get("park", "")), str(park.get("parkUrl") or "")))
+        return park
+
+    def _with_park_media(self, park: dict[str, object]) -> dict[str, object]:
+        park = self._with_park_url(dict(park))
+        park_url = str(park.get("parkUrl") or "")
+        image_url = self._park_image_url(park_url)
+        if image_url:
+            park["imageUrl"] = image_url
+            park["imageCredit"] = "Washington State Parks"
+        return park
+
+    def _park_image_url(self, park_url: str) -> str:
+        if not park_url:
+            return ""
+        if park_url in self.park_image_cache:
+            return self.park_image_cache[park_url]
+        try:
+            body = self._get_external_text(park_url)
+            image_url = _extract_official_park_image_url(body, park_url)
+        except (HTTPError, URLError, TimeoutError, OSError):
+            image_url = ""
+        self.park_image_cache[park_url] = image_url
+        return image_url
 
     def _resources_for_park(self, resource_location_id: int) -> dict[str, dict[str, object]]:
         if resource_location_id not in self.resource_cache:
@@ -642,6 +672,17 @@ class GoingToCampCrawler:
         with urlopen(request, timeout=10) as response:
             return json.loads(response.read(1_000_000).decode("utf-8", errors="replace"))
 
+    def _get_external_text(self, url: str) -> str:
+        request = Request(
+            url,
+            headers={
+                "Accept": "text/html,application/xhtml+xml",
+                "User-Agent": "campsite-watch/0.1",
+            },
+        )
+        with urlopen(request, timeout=10) as response:
+            return response.read(3_000_000).decode("utf-8", errors="replace")
+
     def _get(self, path: str, params: dict[str, object], *, referer: str) -> bytes:
         url = f"{GOING_TO_CAMP_BASE}{path}?{urlencode(params)}"
         try:
@@ -723,6 +764,58 @@ def _access_note_for_park(name: str, description: str) -> str:
     if "ferry" in text:
         return "Ferry access"
     return ""
+
+
+def _official_park_url(name: str, url: str = "") -> str:
+    parsed = urlparse(url)
+    if parsed.scheme == "https" and parsed.netloc == "parks.wa.gov":
+        return url
+    if name:
+        return f"https://parks.wa.gov/find-parks/state-parks/{_park_slug(name)}"
+    return ""
+
+
+def _park_slug(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower().replace("&", "and")).strip("-")
+    return slug
+
+
+def _extract_official_park_image_url(html: str, page_url: str) -> str:
+    for pattern in (
+        r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\']',
+    ):
+        match = re.search(pattern, html, flags=re.IGNORECASE)
+        if match:
+            url = _safe_official_image_url(match.group(1), page_url)
+            if url:
+                return url
+
+    candidates = re.findall(
+        r'(?:src|href)=["\']([^"\']*/sites/default/files/[^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']',
+        html,
+        flags=re.IGNORECASE,
+    )
+    for candidate in candidates:
+        lower = candidate.lower()
+        if "logo" in lower or "favicon" in lower or "blog" in lower:
+            continue
+        if "/styles/square_600/" not in lower and "/styles/small_thumbnail" not in lower:
+            continue
+        url = _safe_official_image_url(candidate, page_url)
+        if url:
+            return url
+    return ""
+
+
+def _safe_official_image_url(value: str, page_url: str) -> str:
+    url = urljoin(page_url, unescape(value))
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc != "parks.wa.gov":
+        return ""
+    if "/sites/default/files/" not in parsed.path:
+        return ""
+    return url
 
 
 def _requested_date_ranges(query: dict[str, list[str]]) -> list[tuple[date, date]]:

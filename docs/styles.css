@@ -481,6 +481,35 @@ button:disabled {
   padding: 14px;
 }
 
+.park-photo-link {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  margin: -14px -14px 12px;
+  border-radius: 8px 8px 0 0;
+  background: var(--surface-strong);
+  text-decoration: none;
+}
+
+.park-photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+}
+
+.photo-credit {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  border-radius: 999px;
+  background: rgb(19 32 41 / 78%);
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 780;
+  padding: 3px 7px;
+}
+
 .result-header {
   display: flex;
   align-items: flex-start;

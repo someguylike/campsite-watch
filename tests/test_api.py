@@ -5,7 +5,9 @@ import io
 import unittest
 
 from campsite_watch.api import ApiHandler
+from campsite_watch.api import _extract_official_park_image_url
 from campsite_watch.api import _matches_query
+from campsite_watch.api import _official_park_url
 from campsite_watch.api import _ranges_overlap
 from campsite_watch.api import _validate_refresh_query
 
@@ -96,6 +98,24 @@ class ApiBehaviorTest(unittest.TestCase):
 
         self.assertTrue(_matches_query(item, {"startDate": ["2026-07-10"]}))
         self.assertFalse(_matches_query(item, {"startDate": ["2026-07-12"]}))
+
+    def test_official_park_url_and_image_extraction(self) -> None:
+        self.assertEqual(
+            _official_park_url("Kitsap Memorial State Park"),
+            "https://parks.wa.gov/find-parks/state-parks/kitsap-memorial-state-park",
+        )
+        html = '''
+            <img src="/sites/default/files/WAStateParks_Logo.png">
+            <img src="/sites/default/files/styles/square_600/public/2023-04/Kitsap%20Memorial%20beach.jpg?itok=fGGQVxSE">
+        '''
+
+        self.assertEqual(
+            _extract_official_park_image_url(
+                html,
+                "https://parks.wa.gov/find-parks/state-parks/kitsap-memorial-state-park",
+            ),
+            "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Kitsap%20Memorial%20beach.jpg?itok=fGGQVxSE",
+        )
 
 
 if __name__ == "__main__":

@@ -1057,6 +1057,7 @@ function renderResults(items) {
       const weekends = group.items.length;
       return `
         <article id="${parkDomId(group.park)}" class="result-card" data-park="${escapeHtml(group.park)}">
+          ${parkImageMarkup(firstItem)}
           <div class="result-header">
             <div>
               <div class="park-title-row">
@@ -1097,6 +1098,23 @@ function groupResultsByPark(items) {
     groups.get(item.park).items.push(item);
   }
   return [...groups.values()];
+}
+
+function parkImageMarkup(item) {
+  const imageUrl = parkImageUrl(item);
+  if (!imageUrl) return "";
+  const credit = item.imageCredit ? `<span>Photo: ${escapeHtml(item.imageCredit)}</span>` : "";
+  return `
+    <a class="park-photo-link" href="${escapeHtml(safeExternalUrl(parkInfoUrl(item), "https://parks.wa.gov/"))}" target="_blank" rel="noreferrer">
+      <img class="park-photo" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.park)}" loading="lazy" />
+      ${credit ? `<span class="photo-credit">${credit}</span>` : ""}
+    </a>
+  `;
+}
+
+function parkImageUrl(item) {
+  if (!item.imageUrl) return "";
+  return safeExternalUrl(item.imageUrl, "");
 }
 
 function renderProximitySummary(items) {
