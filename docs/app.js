@@ -890,8 +890,16 @@ function apiPassword() {
   return window.sessionStorage.getItem(API_PASSWORD_STORAGE_KEY) || "";
 }
 
-function askForNasPassword() {
-  return window.prompt("NAS password")?.trim() || "";
+function askForNasPassword(message = "NAS password") {
+  return window.prompt(message)?.trim() || "";
+}
+
+function promptForNasPasswordOnLoad() {
+  if (!apiBase() || apiPassword()) return Boolean(apiPassword());
+  const password = askForNasPassword("Enter NAS password to load live campsite data");
+  if (!password) return false;
+  window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
+  return true;
 }
 
 function formatDateTime(value) {
@@ -1231,4 +1239,6 @@ function toast(message) {
   window.setTimeout(() => node.remove(), 2400);
 }
 
-runSearch({ queryNas: false });
+window.setTimeout(() => {
+  runSearch({ queryNas: promptForNasPasswordOnLoad() });
+}, 0);
