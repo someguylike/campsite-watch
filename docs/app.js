@@ -445,10 +445,10 @@ document.querySelector("#sync-button")?.addEventListener("click", () => {
   runSearch();
 });
 
-async function runSearch() {
+async function runSearch({ queryNas = true } = {}) {
   await syncStateFromInputs();
   const apiBaseUrl = apiBase();
-  const nasResult = apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
+  const nasResult = queryNas && apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
   if (nasResult?.error === "password_required") {
     state.results = [];
     state.coverageStatus = "unknown";
@@ -476,7 +476,9 @@ async function runSearch() {
   } else {
     state.coverageStatus = "fallback";
     state.results = await prepareResults(availability);
-    searchNote.textContent = apiBaseUrl
+    searchNote.textContent = !queryNas
+      ? "Showing the saved website snapshot. Click Search campsites to query the NAS worker."
+      : apiBaseUrl
       ? "NAS worker is unavailable or blocked. Showing the latest saved website snapshot."
       : "Showing the saved website snapshot.";
   }
@@ -1223,4 +1225,4 @@ function toast(message) {
   window.setTimeout(() => node.remove(), 2400);
 }
 
-runSearch();
+runSearch({ queryNas: false });
