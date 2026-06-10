@@ -55,14 +55,9 @@ button,
   text-decoration: none;
 }
 
-.reserve-link {
-  background: var(--accent);
-  color: white;
-}
-
 .secondary-button,
 .icon-button,
-.directions-link:not(.reserve-link) {
+.directions-link {
   background: white;
   color: var(--accent-strong);
 }
@@ -485,8 +480,8 @@ button:disabled {
   position: relative;
   display: block;
   overflow: hidden;
-  margin: -14px -14px 12px;
-  border-radius: 8px 8px 0 0;
+  margin: 12px 0;
+  border-radius: 8px;
   background: var(--surface-strong);
   padding: 6px;
   text-decoration: none;
@@ -712,28 +707,10 @@ button:disabled {
   text-align: right;
 }
 
-.card-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.link-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .status-line {
+  display: block;
   color: var(--muted);
   font-size: 0.8rem;
-}
-
-.park-directions-link {
-  display: inline-flex;
-  width: fit-content;
-  margin-top: 12px;
 }
 
 .popup-title {
@@ -772,7 +749,6 @@ button:disabled {
   .filter-grid,
   .timing-layout,
   .result-header,
-  .card-actions,
   .weekend-row-header,
   .button-row {
     align-items: stretch;

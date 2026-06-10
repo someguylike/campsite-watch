@@ -1057,14 +1057,13 @@ function renderResults(items) {
       const weekends = group.items.length;
       return `
         <article id="${parkDomId(group.park)}" class="result-card" data-park="${escapeHtml(group.park)}">
-          ${parkImageMarkup(firstItem)}
           <div class="result-header">
             <div>
               <div class="park-title-row">
                 <h2 class="park-name">
                   <a href="${escapeHtml(safeExternalUrl(parkInfoUrl(firstItem), "https://parks.wa.gov/"))}" target="_blank" rel="noreferrer">${escapeHtml(group.park)}</a>
                 </h2>
-                <a class="park-title-link" href="${escapeHtml(googleMapsPlaceUrl(firstItem))}" target="_blank" rel="noreferrer">Google Maps</a>
+                <a class="park-title-link" href="${escapeHtml(directionsUrl(firstItem))}" target="_blank" rel="noreferrer">Direction</a>
                 <span class="direction-chip" title="${escapeHtml(directionTitle(firstItem))}">
                   <span class="direction-arrow" style="transform: rotate(${Math.round(firstItem.bearingDegrees || 0)}deg)">↑</span>
                   ${escapeHtml(firstItem.direction || "")}
@@ -1075,10 +1074,10 @@ function renderResults(items) {
             </div>
             <div class="badge">${weekends} weekend${weekends === 1 ? "" : "s"}</div>
           </div>
+          ${parkImageMarkup(firstItem)}
           <div class="weekend-list">
             ${group.items.map(renderWeekendRow).join("")}
           </div>
-          <a class="directions-link park-directions-link" href="${escapeHtml(directionsUrl(firstItem))}" target="_blank" rel="noreferrer">Directions</a>
         </article>
       `;
     })
@@ -1197,7 +1196,6 @@ function directionCounts(items) {
 }
 
 function renderWeekendRow(item) {
-  const firstSite = item.sampleSites[0];
   return `
     <section class="weekend-row" aria-label="${escapeHtml(item.park)} ${formatDate(item.date)} to ${formatDate(item.end)}">
       <div class="weekend-row-header">
@@ -1209,12 +1207,7 @@ function renderWeekendRow(item) {
         <span class="weekend-site-count">${item.availableTentSites} sites</span>
       </div>
       <ul class="site-list">${renderSiteLinks(item)}</ul>
-      <div class="card-actions">
-        <div class="link-group">
-          <a class="directions-link reserve-link" href="${escapeHtml(reservationUrl(item, firstSite))}" target="_blank" rel="noreferrer">${reservationLabel(item, firstSite)}</a>
-        </div>
-        <span class="status-line">1 tent · ${state.partySize} people</span>
-      </div>
+      <span class="status-line">1 tent · ${state.partySize} people</span>
     </section>
   `;
 }
@@ -1255,11 +1248,6 @@ function directionsUrl(item) {
   const origin = encodeURIComponent(state.originQuery);
   const destination = encodeURIComponent(destinationText(item));
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
-}
-
-function googleMapsPlaceUrl(item) {
-  const query = encodeURIComponent(destinationText(item));
-  return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
 function destinationText(item) {
@@ -1445,10 +1433,6 @@ function nightsBetween(start, end) {
   const endTime = new Date(`${end}T12:00:00`).getTime();
   const days = Math.round((endTime - startTime) / 86400000);
   return Math.max(0, days);
-}
-
-function reservationLabel(item, site) {
-  return hasDistinctSiteReservationUrl(item, site) ? "Open selected site" : "Open booking for this weekend";
 }
 
 function sampleSiteText(item) {
