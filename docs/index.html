@@ -57,7 +57,7 @@
             <p class="field-help">Use exact dates for a specific stay, or pick a flexible month to search every Friday-to-Sunday weekend.</p>
 
             <div class="timing-layout">
-              <div class="timing-block">
+              <div class="timing-card">
                 <div class="timing-heading">
                   <strong>Exact stay</strong>
                   <span>Best when your dates are fixed</span>
@@ -75,15 +75,18 @@
                 </div>
               </div>
 
-              <label class="field timing-block">
-                <span class="timing-heading">
+              <div class="timing-card">
+                <div class="timing-heading">
                   <strong>Flexible month</strong>
                   <span>Search weekend stays in that month</span>
-                </span>
-                <select id="month-filter" name="month">
-                  <option value="any" selected>Any weekend in the next 6 months</option>
-                </select>
-              </label>
+                </div>
+                <label class="field">
+                  <span>Month</span>
+                  <select id="month-filter" name="month">
+                    <option value="any" selected>Any weekend in the next 6 months</option>
+                  </select>
+                </label>
+              </div>
             </div>
           </fieldset>
 

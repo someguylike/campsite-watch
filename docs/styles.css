@@ -292,20 +292,26 @@ select:focus {
 
 .timing-layout {
   display: grid;
-  grid-template-columns: minmax(300px, 0.9fr) minmax(260px, 1.1fr);
+  align-items: stretch;
+  grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
   gap: 10px;
 }
 
-.timing-block {
+.timing-card {
   display: grid;
   align-content: start;
-  gap: 9px;
+  gap: 10px;
   min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 10px;
 }
 
 .timing-heading {
   display: grid;
   gap: 2px;
+  min-height: 42px;
 }
 
 .timing-heading strong {
