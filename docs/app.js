@@ -375,6 +375,12 @@ refreshButton.addEventListener("click", async () => {
   await triggerRefresh();
 });
 
+nasPasswordInput.addEventListener("keydown", async (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  await triggerRefresh();
+});
+
 distanceMode.addEventListener("change", populateDistanceOptions);
 
 timingModeInputs.forEach((input) => input.addEventListener("change", updateTimingMode));
@@ -539,6 +545,7 @@ async function triggerRefresh() {
     if (result.error) {
       searchNote.textContent = nasErrorMessage(result);
     } else {
+      hideRefreshAuth();
       searchNote.textContent = refreshMessage(result);
       await pollRefreshStatus(apiBaseUrl);
       await runSearch();
@@ -940,6 +947,11 @@ function setSearchBusy(isBusy) {
 function showRefreshAuth() {
   refreshAuth.hidden = false;
   nasPasswordInput.focus();
+}
+
+function hideRefreshAuth() {
+  refreshAuth.hidden = true;
+  nasPasswordInput.value = "";
 }
 
 function timingMode() {
