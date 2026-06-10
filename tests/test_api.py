@@ -6,8 +6,10 @@ import unittest
 
 from campsite_watch.api import ApiHandler
 from campsite_watch.api import _extract_official_park_image_url
+from campsite_watch.api import _extract_official_park_image_urls
 from campsite_watch.api import _matches_query
 from campsite_watch.api import _official_park_url
+from campsite_watch.api import _result_in_refresh_scope
 from campsite_watch.api import _ranges_overlap
 from campsite_watch.api import _validate_refresh_query
 
@@ -107,6 +109,8 @@ class ApiBehaviorTest(unittest.TestCase):
         html = '''
             <img src="/sites/default/files/WAStateParks_Logo.png">
             <img src="/sites/default/files/styles/square_600/public/2023-04/Kitsap%20Memorial%20beach.jpg?itok=fGGQVxSE">
+            <img src="/sites/default/files/styles/square_300/public/2023-04/Kitsap%20Memorial%20beach.jpg?itok=duplicateSize">
+            <img src="/sites/default/files/styles/square_600/public/2023-04/Kitsap%20Memorial%20Front%20.jpg?itok=kDqdJT6Z">
         '''
 
         self.assertEqual(
@@ -116,6 +120,28 @@ class ApiBehaviorTest(unittest.TestCase):
             ),
             "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Kitsap%20Memorial%20beach.jpg?itok=fGGQVxSE",
         )
+        self.assertEqual(
+            _extract_official_park_image_urls(
+                html,
+                "https://parks.wa.gov/find-parks/state-parks/kitsap-memorial-state-park",
+            ),
+            [
+                "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Kitsap%20Memorial%20beach.jpg?itok=fGGQVxSE",
+                "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Kitsap%20Memorial%20Front%20.jpg?itok=kDqdJT6Z",
+            ],
+        )
+
+    def test_result_in_refresh_scope_targets_exact_date_or_month(self) -> None:
+        item = {"date": "2026-07-10", "end": "2026-07-12", "park": "Test Park"}
+
+        self.assertTrue(
+            _result_in_refresh_scope(item, {"startDate": ["2026-07-10"], "endDate": ["2026-07-12"]}, ["2026-07"])
+        )
+        self.assertFalse(
+            _result_in_refresh_scope(item, {"startDate": ["2026-07-17"], "endDate": ["2026-07-19"]}, ["2026-07"])
+        )
+        self.assertTrue(_result_in_refresh_scope(item, {"month": ["2026-07"]}, ["2026-07"]))
+        self.assertFalse(_result_in_refresh_scope(item, {"month": ["2026-08"]}, ["2026-08"]))
 
 
 if __name__ == "__main__":

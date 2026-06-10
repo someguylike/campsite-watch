@@ -1101,20 +1101,28 @@ function groupResultsByPark(items) {
 }
 
 function parkImageMarkup(item) {
-  const imageUrl = parkImageUrl(item);
-  if (!imageUrl) return "";
+  const imageUrls = parkImageUrls(item);
+  if (!imageUrls.length) return "";
   const credit = item.imageCredit ? `<span>Photo: ${escapeHtml(item.imageCredit)}</span>` : "";
+  const heroUrl = imageUrls[0];
+  const strip = imageUrls.slice(1, 5)
+    .map(
+      (url, index) =>
+        `<img class="park-photo-thumb" src="${escapeHtml(url)}" alt="${escapeHtml(item.park)} photo ${index + 2}" loading="lazy" />`,
+    )
+    .join("");
   return `
     <a class="park-photo-link" href="${escapeHtml(safeExternalUrl(parkInfoUrl(item), "https://parks.wa.gov/"))}" target="_blank" rel="noreferrer">
-      <img class="park-photo" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.park)}" loading="lazy" />
+      <img class="park-photo" src="${escapeHtml(heroUrl)}" alt="${escapeHtml(item.park)}" loading="lazy" />
+      ${strip ? `<span class="park-photo-strip">${strip}</span>` : ""}
       ${credit ? `<span class="photo-credit">${credit}</span>` : ""}
     </a>
   `;
 }
 
-function parkImageUrl(item) {
-  if (!item.imageUrl) return "";
-  return safeExternalUrl(item.imageUrl, "");
+function parkImageUrls(item) {
+  const urls = Array.isArray(item.imageUrls) && item.imageUrls.length ? item.imageUrls : [item.imageUrl];
+  return urls.map((url) => safeExternalUrl(url, "")).filter(Boolean);
 }
 
 function renderProximitySummary(items) {

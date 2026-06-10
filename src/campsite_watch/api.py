@@ -355,21 +355,25 @@ class ApiHandler(BaseHTTPRequestHandler):
         try:
             crawler = GoingToCampCrawler()
             results = crawler.search(query)
+            payload = self._merged_refresh_payload(results, query, requested_months)
+            months = payload["checkedMonths"] if isinstance(payload.get("checkedMonths"), list) else requested_months
+            saved_results = payload["results"] if isinstance(payload.get("results"), list) else results
+            new_result_count = len(results)
             payload = {
-                "source": "live",
+                **payload,
                 "lastChecked": datetime.now(timezone.utc).isoformat(),
-                "checkedMonths": requested_months or _months_in_results(results),
-                "results": results,
             }
             self.results_path.parent.mkdir(parents=True, exist_ok=True)
             temp_path = self.results_path.with_suffix(f"{self.results_path.suffix}.tmp")
             temp_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
             temp_path.replace(self.results_path)
-            months = requested_months or _months_in_results(results)
             _write_refresh_status(
                 status_path,
                 "complete",
-                f"Refresh complete. Found {len(results)} available park/date matches across {len(months)} month(s).",
+                (
+                    f"Refresh complete. Found {new_result_count} available park/date matches for this refresh. "
+                    f"Saved cache now has {len(saved_results)} matches across {len(months)} checked month(s)."
+                ),
                 requested_months,
             )
         except HTTPError as error:
@@ -392,6 +396,40 @@ class ApiHandler(BaseHTTPRequestHandler):
         finally:
             self.refresh_lock.release()
 
+    def _merged_refresh_payload(
+        self,
+        new_results: list[dict[str, object]],
+        query: dict[str, list[str]],
+        requested_months: list[str],
+    ) -> dict[str, object]:
+        existing_payload = self._read_existing_results_payload()
+        existing_results = [
+            item
+            for item in existing_payload.get("results", [])
+            if isinstance(item, dict) and not _result_in_refresh_scope(item, query, requested_months)
+        ]
+        checked_months = sorted(
+            set(_payload_checked_months(existing_payload))
+            | set(requested_months)
+            | set(_months_in_results(new_results))
+        )
+        merged_results = sorted(
+            existing_results + new_results,
+            key=lambda item: (str(item.get("date", "")), _as_float(item.get("distanceMiles"), 0), str(item.get("park", ""))),
+        )
+        return {
+            "source": "live",
+            "checkedMonths": checked_months,
+            "results": merged_results,
+        }
+
+    def _read_existing_results_payload(self) -> dict[str, object]:
+        try:
+            payload = json.loads(self.results_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        return payload if isinstance(payload, dict) else {}
+
 
 class GoingToCampCrawler:
     def __init__(self) -> None:
@@ -399,7 +437,7 @@ class GoingToCampCrawler:
         self.map_label_cache: dict[int, dict[int, str]] = {}
         self.resource_locations: list[dict[str, object]] | None = None
         self.origin_cache: dict[str, tuple[float, float]] = {}
-        self.park_image_cache: dict[str, str] = {}
+        self.park_image_cache: dict[str, list[str]] = {}
 
     def search(self, query: dict[str, list[str]]) -> list[dict[str, object]]:
         ranges = _requested_date_ranges(query)
@@ -534,24 +572,25 @@ class GoingToCampCrawler:
     def _with_park_media(self, park: dict[str, object]) -> dict[str, object]:
         park = self._with_park_url(dict(park))
         park_url = str(park.get("parkUrl") or "")
-        image_url = self._park_image_url(park_url)
-        if image_url:
-            park["imageUrl"] = image_url
+        image_urls = self._park_image_urls(park_url)
+        if image_urls:
+            park["imageUrl"] = image_urls[0]
+            park["imageUrls"] = image_urls
             park["imageCredit"] = "Washington State Parks"
         return park
 
-    def _park_image_url(self, park_url: str) -> str:
+    def _park_image_urls(self, park_url: str) -> list[str]:
         if not park_url:
-            return ""
+            return []
         if park_url in self.park_image_cache:
             return self.park_image_cache[park_url]
         try:
             body = self._get_external_text(park_url)
-            image_url = _extract_official_park_image_url(body, park_url)
+            image_urls = _extract_official_park_image_urls(body, park_url)
         except (HTTPError, URLError, TimeoutError, OSError):
-            image_url = ""
-        self.park_image_cache[park_url] = image_url
-        return image_url
+            image_urls = []
+        self.park_image_cache[park_url] = image_urls
+        return image_urls
 
     def _resources_for_park(self, resource_location_id: int) -> dict[str, dict[str, object]]:
         if resource_location_id not in self.resource_cache:
@@ -781,31 +820,58 @@ def _park_slug(name: str) -> str:
 
 
 def _extract_official_park_image_url(html: str, page_url: str) -> str:
+    urls = _extract_official_park_image_urls(html, page_url)
+    return urls[0] if urls else ""
+
+
+def _extract_official_park_image_urls(html: str, page_url: str, limit: int = 6) -> list[str]:
+    urls: list[str] = []
+    seen_images: set[str] = set()
+
+    def append_url(value: str) -> None:
+        url = _safe_official_image_url(value, page_url)
+        image_key = _official_image_identity(url)
+        if url and image_key not in seen_images:
+            urls.append(url)
+            seen_images.add(image_key)
+
     for pattern in (
         r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']',
         r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\'](?:og:image|twitter:image)["\']',
     ):
         match = re.search(pattern, html, flags=re.IGNORECASE)
         if match:
-            url = _safe_official_image_url(match.group(1), page_url)
-            if url:
-                return url
+            append_url(match.group(1))
 
     candidates = re.findall(
         r'(?:src|href)=["\']([^"\']*/sites/default/files/[^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']',
         html,
         flags=re.IGNORECASE,
     )
-    for candidate in candidates:
-        lower = candidate.lower()
-        if "logo" in lower or "favicon" in lower or "blog" in lower:
-            continue
-        if "/styles/square_600/" not in lower and "/styles/small_thumbnail" not in lower:
-            continue
-        url = _safe_official_image_url(candidate, page_url)
-        if url:
-            return url
-    return ""
+    for style in ("/styles/square_600/", "/styles/square_300/", "/styles/small_thumbnail"):
+        count_before_style = len(urls)
+        for candidate in candidates:
+            lower = candidate.lower()
+            if "logo" in lower or "favicon" in lower or "blog" in lower:
+                continue
+            if style not in lower:
+                continue
+            append_url(candidate)
+            if len(urls) >= limit:
+                return urls[:limit]
+        if len(urls) > count_before_style:
+            return urls[:limit]
+    return urls[:limit]
+
+
+def _official_image_identity(url: str) -> str:
+    if not url:
+        return ""
+    path = urlparse(url).path.lower()
+    public_marker = "/public/"
+    if public_marker in path:
+        return path.split(public_marker, 1)[1]
+    return re.sub(r"/styles/[^/]+/", "/", path)
 
 
 def _safe_official_image_url(value: str, page_url: str) -> str:
@@ -1019,8 +1085,36 @@ def _matches_query(item: dict[str, object], query: dict[str, list[str]]) -> bool
     return True
 
 
+def _result_in_refresh_scope(
+    item: dict[str, object],
+    query: dict[str, list[str]],
+    requested_months: list[str],
+) -> bool:
+    if _first(query, "startDate") or _first(query, "endDate"):
+        ranges = _requested_date_ranges(query)
+        if not ranges:
+            return False
+        start, end = ranges[0]
+        return str(item.get("date", "")) == start.isoformat() and str(item.get("end", "")) == end.isoformat()
+    if requested_months:
+        item_months = {
+            str(item.get("date", ""))[:7],
+            str(item.get("end", ""))[:7],
+        }
+        return bool(item_months & set(requested_months))
+    return _matches_query(item, query)
+
+
 def _ranges_overlap(start_a: str, end_a: str, start_b: str, end_b: str) -> bool:
     return start_a < end_b and end_a > start_b
+
+
+def _payload_checked_months(payload: dict[str, object]) -> list[str]:
+    checked_months = payload.get("checkedMonths")
+    if isinstance(checked_months, list):
+        return sorted(str(month) for month in checked_months if isinstance(month, str))
+    results = payload.get("results")
+    return _months_in_results([item for item in results if isinstance(item, dict)]) if isinstance(results, list) else []
 
 
 def _months_in_results(results: list[dict[str, object]]) -> list[str]:
