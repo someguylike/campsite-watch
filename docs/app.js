@@ -952,7 +952,12 @@ function renderResults(items) {
         <article class="result-card" data-park="${escapeHtml(item.park)}">
           <div class="result-header">
             <div>
-              <h2 class="park-name">${escapeHtml(item.park)}</h2>
+              <div class="park-title-row">
+                <h2 class="park-name">
+                  <a href="${parkInfoUrl(item)}" target="_blank" rel="noreferrer">${escapeHtml(item.park)}</a>
+                </h2>
+                <a class="park-title-link" href="${googleMapsPlaceUrl(item)}" target="_blank" rel="noreferrer">Google Maps</a>
+              </div>
               <div class="meta">${formatDate(item.date)}-${formatDate(item.end)} · ${escapeHtml(item.city)}, ${escapeHtml(item.zip)} · ${distanceText(item)} from ${escapeHtml(state.origin.label)}</div>
             </div>
             <div class="badge">${item.availableTentSites} sites</div>
@@ -998,6 +1003,23 @@ function directionsUrl(item) {
   const origin = encodeURIComponent(state.originQuery);
   const destination = encodeURIComponent(`${item.park}, ${item.city}, WA ${item.zip}`);
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+}
+
+function googleMapsPlaceUrl(item) {
+  const query = encodeURIComponent(`${item.park}, ${item.city}, WA ${item.zip}`);
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
+function parkInfoUrl(item) {
+  return `https://parks.wa.gov/find-parks/state-parks/${parkSlug(item.park)}`;
+}
+
+function parkSlug(name) {
+  return String(name)
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 async function withRouteEstimate(item) {

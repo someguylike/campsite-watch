@@ -331,9 +331,39 @@ button:disabled {
   gap: 12px;
 }
 
-.park-name {
+.park-title-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 3px;
+}
+
+.park-name {
+  margin-bottom: 0;
   font-size: 1.05rem;
+}
+
+.park-name a {
+  color: var(--text);
+  text-decoration-color: rgb(23 107 115 / 40%);
+  text-underline-offset: 3px;
+}
+
+.park-name a:hover {
+  color: var(--accent-strong);
+}
+
+.park-title-link {
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 820;
+  text-decoration: none;
+}
+
+.park-title-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .meta {
