@@ -77,7 +77,6 @@ const parks = {
     resourceLocationId: -2147483600,
     transactionLocationId: -2147483613,
     mapId: -2147483378,
-    googleMapsUrl: "https://www.google.com/maps/place/Kitsap+Memorial+State+Park/@47.8179216,-122.6535678,17z/data=!3m1!4b1!4m6!3m5!1s0x549021d1e5d4e431:0xe9b7f988ca6fe66a!8m2!3d47.817918!4d-122.6509929!16s%2Fm%2F09k74v6?entry=ttu",
   },
   "Scenic Beach State Park": {
     city: "Seabeck",
@@ -1007,7 +1006,6 @@ function directionsUrl(item) {
 }
 
 function googleMapsPlaceUrl(item) {
-  if (item.googleMapsUrl) return item.googleMapsUrl;
   const query = encodeURIComponent(`${item.park}, ${item.city}, WA ${item.zip}`);
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
