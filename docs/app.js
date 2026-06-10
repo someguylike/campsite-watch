@@ -653,13 +653,14 @@ function nasUrl(apiBaseUrl, path) {
 }
 
 async function pollRefreshStatus(apiBaseUrl) {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    await sleep(1500);
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    await sleep(3000);
     const status = await fetchRefreshStatus(apiBaseUrl);
     if (!status || status.error) return;
     searchNote.textContent = refreshMessage(status);
     if (status.status && status.status !== "running") return;
   }
+  searchNote.textContent = "NAS refresh is still running. Search again in a moment to load the latest snapshot.";
 }
 
 function refreshMessage(status) {
