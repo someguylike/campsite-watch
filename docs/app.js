@@ -1022,7 +1022,7 @@ function renderWeekendRow(item) {
 function renderSiteLinks(item) {
   return item.sampleSites
     .map((site) => {
-      const directSite = Boolean(siteMapId(item, site));
+      const directSite = hasDistinctSiteReservationUrl(item, site);
       const title = directSite ? "Open booking with this campsite selected" : "Open this park and weekend";
       return `<li><a class="site-chip${directSite ? " direct-site" : ""}" href="${reservationUrl(item, site)}" target="_blank" rel="noreferrer" title="${title}">${escapeHtml(site[0])} ${escapeHtml(site[1])}</a></li>`;
     })
@@ -1170,12 +1170,17 @@ function nightsBetween(start, end) {
 }
 
 function reservationLabel(item, site) {
-  return siteMapId(item, site) ? "Open selected site" : "Open booking";
+  return hasDistinctSiteReservationUrl(item, site) ? "Open selected site" : "Open booking";
 }
 
 function siteMapId(item, site) {
   if (!site) return null;
   return siteMapIds[siteKey(item.park, site[0], site[1])] ?? null;
+}
+
+function hasDistinctSiteReservationUrl(item, site) {
+  const mapId = siteMapId(item, site);
+  return mapId !== null && String(mapId) !== String(item.mapId);
 }
 
 function siteKey(park, loop, site) {
