@@ -272,6 +272,59 @@ select:focus {
   grid-template-columns: minmax(260px, 1.35fr) minmax(150px, 0.65fr);
 }
 
+.timing-fieldset {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 12px;
+}
+
+.timing-fieldset legend {
+  padding: 0 4px;
+}
+
+.timing-fieldset .field-help {
+  margin-bottom: 0;
+}
+
+.timing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(190px, 0.65fr);
+  gap: 10px;
+}
+
+.timing-block {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-width: 0;
+}
+
+.timing-heading {
+  display: grid;
+  gap: 2px;
+}
+
+.timing-heading strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.timing-heading span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.date-grid {
+  gap: 8px;
+}
+
 .segmented {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -507,6 +560,7 @@ button:disabled {
   }
 
   .filter-grid,
+  .timing-layout,
   .result-header,
   .card-actions,
   .weekend-row-header,

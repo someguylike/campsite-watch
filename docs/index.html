@@ -52,26 +52,40 @@
             </label>
           </div>
 
-          <div class="filter-grid">
-            <label class="field">
-              <span>Check-in date</span>
-              <input id="start-date-input" name="startDate" type="date" />
-            </label>
+          <fieldset class="timing-fieldset">
+            <legend>Trip timing</legend>
+            <p class="field-help">Use exact dates for a specific stay, or pick a flexible month to search every Friday-to-Sunday weekend.</p>
 
-            <label class="field">
-              <span>Check-out date</span>
-              <input id="end-date-input" name="endDate" type="date" />
-            </label>
-          </div>
+            <div class="timing-layout">
+              <div class="timing-block">
+                <div class="timing-heading">
+                  <strong>Exact stay</strong>
+                  <span>Best when your dates are fixed</span>
+                </div>
+                <div class="filter-grid date-grid">
+                  <label class="field">
+                    <span>Check in</span>
+                    <input id="start-date-input" name="startDate" type="date" />
+                  </label>
 
-          <div class="filter-grid">
-            <label class="field">
-              <span>Or month</span>
-              <select id="month-filter" name="month">
-                <option value="any" selected>Any available month</option>
-              </select>
-            </label>
-          </div>
+                  <label class="field">
+                    <span>Check out</span>
+                    <input id="end-date-input" name="endDate" type="date" />
+                  </label>
+                </div>
+              </div>
+
+              <label class="field timing-block">
+                <span class="timing-heading">
+                  <strong>Flexible month</strong>
+                  <span>Search weekend stays in that month</span>
+                </span>
+                <select id="month-filter" name="month">
+                  <option value="any" selected>Any weekend in the next 6 months</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
 
           <div class="filter-grid">
             <label class="field">
