@@ -92,7 +92,7 @@ def main() -> None:
     parser.add_argument(
         "--api-password",
         default=os.environ.get("CAMPSITE_WATCH_API_PASSWORD", os.environ.get("CAMPSITE_WATCH_API_TOKEN", "")),
-        help="shared password required by the website before querying the NAS API",
+        help="shared password required before the website can trigger live refreshes",
     )
     parser.add_argument("--api-token", default="", help=argparse.SUPPRESS)
     parser.add_argument("--log-level", default="INFO")

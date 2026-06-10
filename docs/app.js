@@ -5,8 +5,6 @@ const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
 const API_PASSWORD_STORAGE_KEY = "campsite-watch.apiPassword";
 const routeCache = new Map();
 
-window.localStorage.removeItem(API_BASE_STORAGE_KEY);
-
 const parks = {
   "Blake Island State Park": {
     city: "Manchester",
@@ -17,6 +15,7 @@ const parks = {
     resourceLocationId: -2147483640,
     transactionLocationId: -2147483641,
     mapId: -2147483404,
+    accessNote: "Water access only",
   },
   "Saltwater State Park": {
     city: "Des Moines",
@@ -436,7 +435,7 @@ document.querySelector("#sync-button")?.addEventListener("click", () => {
   if (trimmed) {
     window.localStorage.setItem(API_BASE_STORAGE_KEY, trimmed);
     window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
-    toast("NAS worker URL saved. Enter the NAS password when you search.");
+    toast("NAS worker URL saved. Password is only needed for refresh.");
   } else {
     window.localStorage.removeItem(API_BASE_STORAGE_KEY);
     window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
@@ -448,21 +447,19 @@ document.querySelector("#sync-button")?.addEventListener("click", () => {
 async function runSearch({ queryNas = true } = {}) {
   await syncStateFromInputs();
   const apiBaseUrl = apiBase();
+  if (queryNas && apiBaseUrl) {
+    searchNote.textContent = "Loading saved NAS results...";
+  }
   const nasResult = queryNas && apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
   if (nasResult?.error === "password_required") {
     state.results = [];
     state.coverageStatus = "unknown";
-    searchNote.textContent = "Enter the NAS password to query fresh availability.";
+    searchNote.textContent = "Refresh requires the NAS password. Search can still read saved results without it.";
   } else if (nasResult?.error === "unauthorized") {
     window.sessionStorage.removeItem(API_PASSWORD_STORAGE_KEY);
-    const password = askForNasPassword();
-    if (password) {
-      window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
-      return runSearch();
-    }
     state.results = [];
     state.coverageStatus = "unknown";
-    searchNote.textContent = "Enter the NAS password to query fresh availability.";
+    searchNote.textContent = "Saved NAS results are not readable from this browser.";
   } else if (nasResult) {
     if (nasResult.error) {
       state.coverageStatus = "fallback";
@@ -523,7 +520,7 @@ async function triggerRefresh() {
     if (password) {
       window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
       refreshButton.disabled = false;
-      refreshButton.textContent = "Refresh NAS data";
+      refreshButton.textContent = "Refresh availability";
       return triggerRefresh();
     }
     searchNote.textContent = "Enter the NAS password to refresh availability.";
@@ -540,7 +537,7 @@ async function triggerRefresh() {
   }
 
   refreshButton.disabled = false;
-  refreshButton.textContent = "Refresh NAS data";
+  refreshButton.textContent = "Refresh availability";
 }
 
 async function prepareResults(items, checkedMonths = null) {
@@ -602,24 +599,25 @@ async function fetchNasResults(apiBaseUrl) {
 
 async function postNasRefresh(apiBaseUrl) {
   const url = nasUrl(apiBaseUrl, "/api/refresh");
-  return fetchNasJson(url, { method: "POST" });
+  return fetchNasJson(url, { method: "POST" }, { requireAuth: true });
 }
 
 async function fetchRefreshStatus(apiBaseUrl) {
   return fetchNasJson(nasUrl(apiBaseUrl, "/api/refresh-status"));
 }
 
-async function fetchNasJson(url, options = {}) {
+async function fetchNasJson(url, options = {}, { requireAuth = false } = {}) {
   let timeout = 0;
   try {
     const controller = new AbortController();
     timeout = window.setTimeout(() => controller.abort(), 12000);
-    const password = apiPassword() || askForNasPassword();
-    if (!password) return { error: "password_required" };
-    window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
     const headers = { Accept: "application/json", ...(options.headers || {}) };
-    headers.Authorization = `Bearer ${password}`;
-    headers["X-Campsite-Watch-Password"] = password;
+    if (requireAuth) {
+      const password = apiPassword() || askForNasPassword();
+      if (!password) return { error: "password_required" };
+      window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
+      headers.Authorization = `Bearer ${password}`;
+    }
     const response = await fetch(url.toString(), { ...options, headers, signal: controller.signal });
     window.clearTimeout(timeout);
     if (response.status === 401) return { error: "unauthorized" };
@@ -658,7 +656,7 @@ async function pollRefreshStatus(apiBaseUrl) {
     const status = await fetchRefreshStatus(apiBaseUrl);
     if (!status || status.error) return;
     searchNote.textContent = refreshMessage(status);
-    if (status.status && status.status !== "running") return;
+    if (status.status && !["queued", "running"].includes(status.status)) return;
   }
   searchNote.textContent = "NAS refresh is still running. Search again in a moment to load the latest snapshot.";
 }
@@ -739,7 +737,7 @@ function matchesSearch(item) {
   const windowRange = searchWindow();
   const distanceMatches =
     distanceMode.value === "hours"
-      ? item.driveDurationMinutes
+      ? item.driveDurationMinutes && !accessNote(item)
         ? item.driveDurationMinutes <= state.maxDriveMinutes
         : item.airDistanceMiles <= state.maxDistance
       : distanceValueMiles(item) <= state.maxDistance;
@@ -814,7 +812,7 @@ function monthsInRange(start, end) {
 }
 
 function dateRangesOverlap(startA, endA, startB, endB) {
-  return startA <= endB && endA >= startB;
+  return startA < endB && endA > startB;
 }
 
 function populateDistanceOptions() {
@@ -833,6 +831,7 @@ function populateDistanceOptions() {
           ["120", "Up to 2 hours"],
           ["180", "Up to 3 hours"],
           ["240", "Up to 4 hours"],
+          ["300", "Up to 5 hours"],
         ];
 
   const validValue = options.some(([value]) => value === selectedValue) ? selectedValue : defaultValue;
@@ -852,6 +851,7 @@ function selectedDistanceMiles() {
         120: 70,
         180: 110,
         240: 150,
+        300: 190,
       }[Number(distanceFilter.value)] ?? 70
     );
   }
@@ -878,12 +878,13 @@ function driveTimeLabel(value) {
       120: "up to 2 hours",
       180: "up to 3 hours",
       240: "up to 4 hours",
+      300: "up to 5 hours",
     }[Number(value)] ?? `${value} miles`
   );
 }
 
 function apiBase() {
-  return window.CAMPSITE_WATCH_API_BASE_URL || DEFAULT_API_BASE_URL;
+  return window.CAMPSITE_WATCH_API_BASE_URL || window.localStorage.getItem(API_BASE_STORAGE_KEY) || DEFAULT_API_BASE_URL;
 }
 
 function apiPassword() {
@@ -892,14 +893,6 @@ function apiPassword() {
 
 function askForNasPassword(message = "NAS password") {
   return window.prompt(message)?.trim() || "";
-}
-
-function promptForNasPasswordOnLoad() {
-  if (!apiBase() || apiPassword()) return Boolean(apiPassword());
-  const password = askForNasPassword("Enter NAS password to load live campsite data");
-  if (!password) return false;
-  window.sessionStorage.setItem(API_PASSWORD_STORAGE_KEY, password);
-  return true;
 }
 
 function formatDateTime(value) {
@@ -978,8 +971,9 @@ function renderResults(items) {
                   <a href="${parkInfoUrl(firstItem)}" target="_blank" rel="noreferrer">${escapeHtml(group.park)}</a>
                 </h2>
                 <a class="park-title-link" href="${googleMapsPlaceUrl(firstItem)}" target="_blank" rel="noreferrer">Google Maps</a>
+                ${accessNote(firstItem) ? `<span class="access-badge">${escapeHtml(accessNote(firstItem))}</span>` : ""}
               </div>
-              <div class="meta">${escapeHtml(firstItem.city)}, ${escapeHtml(firstItem.zip)} · ${distanceText(firstItem)} from ${escapeHtml(state.origin.label)}</div>
+              <div class="meta">${escapeHtml(locationText(firstItem))} · ${distanceText(firstItem)} from ${escapeHtml(state.origin.label)}</div>
             </div>
             <div class="badge">${weekends} weekend${weekends === 1 ? "" : "s"}</div>
           </div>
@@ -1061,17 +1055,35 @@ function noResultsMessage() {
 
 function directionsUrl(item) {
   const origin = encodeURIComponent(state.originQuery);
-  const destination = encodeURIComponent(`${item.park}, ${item.city}, WA ${item.zip}`);
+  const destination = encodeURIComponent(destinationText(item));
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
 }
 
 function googleMapsPlaceUrl(item) {
-  const query = encodeURIComponent(`${item.park}, ${item.city}, WA ${item.zip}`);
+  const query = encodeURIComponent(destinationText(item));
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
+function destinationText(item) {
+  if (Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lon))) {
+    return `${item.lat},${item.lon}`;
+  }
+  return [item.park, item.city, item.zip ? `WA ${item.zip}` : "WA"].filter(Boolean).join(", ");
+}
+
+function locationText(item) {
+  const parts = [item.city, item.zip].filter(Boolean);
+  return parts.length ? parts.join(", ") : "Washington";
+}
+
 function parkInfoUrl(item) {
+  if (item.parkUrl) return item.parkUrl;
   return `https://parks.wa.gov/find-parks/state-parks/${parkSlug(item.park)}`;
+}
+
+function accessNote(item) {
+  if (item.accessNote) return item.accessNote;
+  return item.park === "Blake Island State Park" ? "Water access only" : "";
 }
 
 function parkSlug(name) {
@@ -1134,6 +1146,12 @@ function sortDistance(item) {
 }
 
 function distanceText(item) {
+  if (accessNote(item)) {
+    const prefix = item.driveDistanceMiles && item.driveDurationMinutes
+      ? `${Math.round(item.driveDistanceMiles)} drive mi · ${formatDuration(item.driveDurationMinutes)}`
+      : `${Math.round(item.airDistanceMiles)} mi straight-line`;
+    return `${prefix} · ${accessNote(item)}`;
+  }
   if (item.driveDistanceMiles && item.driveDurationMinutes) {
     return `${Math.round(item.driveDistanceMiles)} drive mi · ${formatDuration(item.driveDurationMinutes)}`;
   }
@@ -1239,6 +1257,4 @@ function toast(message) {
   window.setTimeout(() => node.remove(), 2400);
 }
 
-window.setTimeout(() => {
-  runSearch({ queryNas: promptForNasPasswordOnLoad() });
-}, 0);
+runSearch();

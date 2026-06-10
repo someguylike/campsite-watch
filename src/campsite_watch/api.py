@@ -4,6 +4,7 @@ import argparse
 from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import math
 import os
 from pathlib import Path
 from secrets import compare_digest
@@ -17,6 +18,15 @@ GOING_TO_CAMP_BASE = "https://washington.goingtocamp.com"
 CAMPSITE_EQUIPMENT_ID = -32768
 PEOPLE_CAPACITY_CATEGORY_ID = -32767
 AVAILABLE_STATUS = 0
+MAX_REFRESH_CHECKS = 450
+MAX_REFRESH_WINDOW_DAYS = 190
+MAX_EXACT_STAY_NIGHTS = 14
+ALLOWED_MILE_DISTANCES = {20, 30, 50, 80}
+ALLOWED_DRIVE_MINUTES = {60, 120, 180, 240, 300}
+DEFAULT_ORIGIN = (47.5707, -122.2221)
+ZIP_COORDINATES = {
+    "98040": DEFAULT_ORIGIN,
+}
 
 PARKS = [
     {
@@ -29,6 +39,7 @@ PARKS = [
         "resourceLocationId": -2147483640,
         "transactionLocationId": -2147483641,
         "mapId": -2147483404,
+        "accessNote": "Water access only",
     },
     {
         "park": "Saltwater State Park",
@@ -156,18 +167,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/refresh-status":
-            if not self._authorized():
-                self._send_json(401, {"error": "unauthorized"})
-                return
             self._send_json(200, self._refresh_status())
             return
 
         if path != "/api/search":
             self._send_json(404, {"error": "not_found"})
-            return
-
-        if not self._authorized():
-            self._send_json(401, {"error": "unauthorized"})
             return
 
         if not self.results_path.exists():
@@ -202,11 +206,16 @@ class ApiHandler(BaseHTTPRequestHandler):
             self._send_json(401, {"error": "unauthorized"})
             return
 
+        query = parse_qs(parsed_url.query)
+        validation_error = _validate_refresh_query(query)
+        if validation_error:
+            self._send_json(400, {"error": "bad_request", "detail": validation_error})
+            return
+
         if not self.refresh_lock.acquire(blocking=False):
             self._send_json(202, self._refresh_status() | {"accepted": False})
             return
 
-        query = parse_qs(parsed_url.query)
         _write_refresh_status(
             _refresh_status_path(self.results_path),
             "queued",
@@ -241,7 +250,7 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header(
             "Access-Control-Allow-Headers",
-            "Content-Type, Accept, Authorization, X-Campsite-Watch-Password, X-Campsite-Watch-Token",
+            "Content-Type, Accept, Authorization",
         )
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Type", content_type)
@@ -250,18 +259,12 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def _authorized(self) -> bool:
         if not self.api_token:
-            return True
+            return False
 
         auth = self.headers.get("Authorization", "")
         prefix = "Bearer "
         bearer = auth[len(prefix) :] if auth.startswith(prefix) else ""
-        header_token = self.headers.get("X-Campsite-Watch-Token", "")
-        header_password = self.headers.get("X-Campsite-Watch-Password", "")
-        return (
-            compare_digest(bearer, self.api_token)
-            or compare_digest(header_password, self.api_token)
-            or compare_digest(header_token, self.api_token)
-        )
+        return compare_digest(bearer, self.api_token)
 
     def _origin_allowed(self) -> bool:
         origin = self.headers.get("Origin")
@@ -275,7 +278,12 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def _filtered_payload(self, payload: dict[str, object], query: dict[str, list[str]]) -> dict[str, object]:
         results = [item for item in payload.get("results", []) if isinstance(item, dict)]
-        checked_months = _months_in_results(results)
+        payload_checked_months = payload.get("checkedMonths")
+        checked_months = (
+            sorted(str(month) for month in payload_checked_months if isinstance(month, str))
+            if isinstance(payload_checked_months, list)
+            else _months_in_results(results)
+        )
         requested_months = _requested_months(query)
         filtered = [item for item in results if _matches_query(item, query)]
         response = dict(payload)
@@ -312,6 +320,23 @@ class ApiHandler(BaseHTTPRequestHandler):
         try:
             crawler = GoingToCampCrawler()
             results = crawler.search(query)
+            payload = {
+                "source": "live",
+                "lastChecked": datetime.now(timezone.utc).isoformat(),
+                "checkedMonths": requested_months or _months_in_results(results),
+                "results": results,
+            }
+            self.results_path.parent.mkdir(parents=True, exist_ok=True)
+            temp_path = self.results_path.with_suffix(f"{self.results_path.suffix}.tmp")
+            temp_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+            temp_path.replace(self.results_path)
+            months = requested_months or _months_in_results(results)
+            _write_refresh_status(
+                status_path,
+                "complete",
+                f"Refresh complete. Found {len(results)} available park/date matches across {len(months)} month(s).",
+                requested_months,
+            )
         except HTTPError as error:
             if error.code in {401, 403, 429}:
                 _write_refresh_status(
@@ -322,60 +347,148 @@ class ApiHandler(BaseHTTPRequestHandler):
                 )
             else:
                 _write_refresh_status(status_path, "error", f"Reservation site returned HTTP {error.code}.", requested_months)
-            self.refresh_lock.release()
             return
         except (TimeoutError, URLError, OSError, ValueError) as error:
             _write_refresh_status(status_path, "error", f"Refresh failed: {error}", requested_months)
-            self.refresh_lock.release()
             return
-
-        payload = {
-            "source": "live",
-            "lastChecked": datetime.now(timezone.utc).isoformat(),
-            "results": results,
-        }
-        self.results_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = self.results_path.with_suffix(f"{self.results_path.suffix}.tmp")
-        temp_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-        temp_path.replace(self.results_path)
-        months = _months_in_results(results)
-        _write_refresh_status(
-            status_path,
-            "complete",
-            f"Refresh complete. Found {len(results)} available park/date matches across {len(months)} month(s).",
-            requested_months,
-        )
-        self.refresh_lock.release()
+        except Exception as error:
+            _write_refresh_status(status_path, "error", f"Unexpected refresh failure: {error}", requested_months)
+            return
+        finally:
+            self.refresh_lock.release()
 
 
 class GoingToCampCrawler:
     def __init__(self) -> None:
         self.resource_cache: dict[int, dict[str, dict[str, object]]] = {}
         self.map_label_cache: dict[int, dict[int, str]] = {}
+        self.resource_locations: list[dict[str, object]] | None = None
+        self.origin_cache: dict[str, tuple[float, float]] = {}
 
     def search(self, query: dict[str, list[str]]) -> list[dict[str, object]]:
         ranges = _requested_date_ranges(query)
         people = max(1, int(_as_float(_first(query, "people", "2"), 2)))
         results: list[dict[str, object]] = []
+        parks = self._parks_for_query(query)
+        check_count = len(parks) * len(ranges)
+        if check_count > MAX_REFRESH_CHECKS:
+            raise ValueError(
+                f"Refresh would check {check_count} park/weekend combinations. "
+                "Choose an exact date or a single month for large-distance searches."
+            )
 
-        for park in _parks_for_query(query):
-            resources = self._resources_for_park(int(park["resourceLocationId"]))
-            map_labels = self._map_labels_for_park(int(park["resourceLocationId"]))
-            for start, end in ranges:
-                available_sites = self._available_sites(park, resources, map_labels, start, end, people)
-                if not available_sites:
-                    continue
-                results.append(
-                    {
-                        **park,
-                        "date": start.isoformat(),
-                        "end": end.isoformat(),
-                        "availableTentSites": len(available_sites),
-                        "sampleSites": available_sites[:8],
-                    }
-                )
+        for park in parks:
+            try:
+                resources = self._resources_for_park(int(park["resourceLocationId"]))
+                map_labels = self._map_labels_for_park(int(park["resourceLocationId"]))
+                for start, end in ranges:
+                    available_sites = self._available_sites(park, resources, map_labels, start, end, people)
+                    if not available_sites:
+                        continue
+                    results.append(
+                        {
+                            **park,
+                            "date": start.isoformat(),
+                            "end": end.isoformat(),
+                            "availableTentSites": len(available_sites),
+                            "sampleSites": available_sites[:8],
+                        }
+                    )
+            except HTTPError:
+                raise
+            except (TimeoutError, URLError, OSError, ValueError, json.JSONDecodeError):
+                continue
 
         return sorted(results, key=lambda item: (str(item["date"]), _as_float(item.get("distanceMiles"), 0), str(item["park"])))
+
+    def _parks_for_query(self, query: dict[str, list[str]]) -> list[dict[str, object]]:
+        distance_mode = _first(query, "distanceMode", "miles")
+        distance = _as_float(_first(query, "distance"), 0)
+        miles = _drive_minutes_to_miles(distance) if distance_mode == "hours" and distance > 0 else distance
+        if miles <= 0:
+            return [dict(park) for park in PARKS]
+
+        origin = self._origin_for_query(query)
+        parks_by_id = {}
+        for static_park in PARKS:
+            park = dict(static_park)
+            park["distanceMiles"] = round(
+                _haversine_miles(origin[0], origin[1], _as_float(park.get("lat"), 0), _as_float(park.get("lon"), 0))
+            )
+            parks_by_id[int(park["resourceLocationId"])] = park
+        for park in self._metadata_parks_within(miles, origin):
+            parks_by_id.setdefault(int(park["resourceLocationId"]), park)
+        return sorted(
+            (park for park in parks_by_id.values() if _as_float(park.get("distanceMiles"), 0) <= miles),
+            key=lambda park: (_as_float(park.get("distanceMiles"), 0), str(park.get("park", ""))),
+        )
+
+    def _origin_for_query(self, query: dict[str, list[str]]) -> tuple[float, float]:
+        zip_value = _first(query, "zip", "98040").strip()
+        if zip_value in ZIP_COORDINATES:
+            return ZIP_COORDINATES[zip_value]
+        if zip_value in self.origin_cache:
+            return self.origin_cache[zip_value]
+        if "," in zip_value:
+            try:
+                lat_text, lon_text = zip_value.split(",", 1)
+                origin = (float(lat_text.strip()), float(lon_text.strip()))
+                self.origin_cache[zip_value] = origin
+                return origin
+            except ValueError:
+                return DEFAULT_ORIGIN
+        if len(zip_value) == 5 and zip_value.isdigit():
+            try:
+                payload = self._get_external_json(f"https://api.zippopotam.us/us/{zip_value}")
+                places = payload.get("places") if isinstance(payload, dict) else None
+                place = places[0] if isinstance(places, list) and places and isinstance(places[0], dict) else None
+                if place:
+                    origin = (float(place["latitude"]), float(place["longitude"]))
+                    self.origin_cache[zip_value] = origin
+                    return origin
+            except (KeyError, TypeError, ValueError, HTTPError, URLError, TimeoutError, json.JSONDecodeError):
+                return DEFAULT_ORIGIN
+        return DEFAULT_ORIGIN
+
+    def _metadata_parks_within(self, miles: float, origin: tuple[float, float]) -> list[dict[str, object]]:
+        if self.resource_locations is None:
+            payload = self._get_json(
+                "/api/resourceLocation",
+                {},
+                referer=f"{GOING_TO_CAMP_BASE}/",
+            )
+            self.resource_locations = payload if isinstance(payload, list) else []
+
+        parks: list[dict[str, object]] = []
+        for item in self.resource_locations:
+            if not isinstance(item, dict) or item.get("rootMapId") is None:
+                continue
+            localized = _first_localized_value(item)
+            name = str(localized.get("fullName") or localized.get("shortName") or "")
+            gps = _parse_gps_coordinates(item.get("gpsCoordinates"))
+            if not name or "State Park" not in name or gps is None:
+                continue
+            lat, lon = gps
+            distance_miles = _haversine_miles(origin[0], origin[1], lat, lon)
+            if distance_miles > miles:
+                continue
+            park = {
+                "park": name,
+                "city": str(localized.get("city") or ""),
+                "zip": "",
+                "lat": lat,
+                "lon": lon,
+                "distanceMiles": round(distance_miles),
+                "resourceLocationId": item["resourceLocationId"],
+                "transactionLocationId": item.get("transactionLocationId") or item["resourceLocationId"],
+                "mapId": item["rootMapId"],
+                "parkUrl": str(localized.get("website") or ""),
+            }
+            access_note = _access_note_for_park(name, str(localized.get("description") or ""))
+            if access_note:
+                park["accessNote"] = access_note
+            parks.append(park)
+        return parks
 
     def _resources_for_park(self, resource_location_id: int) -> dict[str, dict[str, object]]:
         if resource_location_id not in self.resource_cache:
@@ -491,6 +604,11 @@ class GoingToCampCrawler:
             raise HTTPError(f"{GOING_TO_CAMP_BASE}{path}", 403, "blocked by bot protection", {}, None)
         return json.loads(text)
 
+    def _get_external_json(self, url: str) -> object:
+        request = Request(url, headers={"Accept": "application/json", "User-Agent": "campsite-watch/0.1"})
+        with urlopen(request, timeout=10) as response:
+            return json.loads(response.read(1_000_000).decode("utf-8", errors="replace"))
+
     def _get(self, path: str, params: dict[str, object], *, referer: str) -> bytes:
         url = f"{GOING_TO_CAMP_BASE}{path}?{urlencode(params)}"
         try:
@@ -533,16 +651,45 @@ def _first(query: dict[str, list[str]], key: str, default: str = "") -> str:
     return values[0] if values else default
 
 
-def _parks_for_query(query: dict[str, list[str]]) -> list[dict[str, object]]:
-    distance_mode = _first(query, "distanceMode", "miles")
-    distance = _as_float(_first(query, "distance"), 0)
-    parks = [dict(park) for park in PARKS]
-    if distance <= 0:
-        return parks
-    if distance_mode == "hours":
-        miles = _drive_minutes_to_miles(distance)
-        return [park for park in parks if _as_float(park.get("distanceMiles"), 0) <= miles]
-    return [park for park in parks if _as_float(park.get("distanceMiles"), 0) <= distance]
+def _first_localized_value(item: dict[str, object]) -> dict[str, object]:
+    values = item.get("localizedValues")
+    if isinstance(values, list):
+        for value in values:
+            if isinstance(value, dict) and value.get("cultureName") == "en-US":
+                return value
+        for value in values:
+            if isinstance(value, dict):
+                return value
+    return {}
+
+
+def _parse_gps_coordinates(value: object) -> tuple[float, float] | None:
+    if not isinstance(value, str) or "," not in value:
+        return None
+    try:
+        lat_text, lon_text = value.split(",", 1)
+        return float(lat_text.strip()), float(lon_text.strip())
+    except ValueError:
+        return None
+
+
+def _haversine_miles(origin_lat: float, origin_lon: float, lat: float, lon: float) -> float:
+    radians = math.pi / 180
+    dlat = (lat - origin_lat) * radians
+    dlon = (lon - origin_lon) * radians
+    origin_lat_rad = origin_lat * radians
+    lat_rad = lat * radians
+    a = math.sin(dlat / 2) ** 2 + math.cos(origin_lat_rad) * math.cos(lat_rad) * math.sin(dlon / 2) ** 2
+    return 3958.8 * 2 * math.asin(math.sqrt(a))
+
+
+def _access_note_for_park(name: str, description: str) -> str:
+    text = f"{name} {description}".lower()
+    if "blake island" in text or "only reachable by private boat" in text:
+        return "Water access only"
+    if "ferry" in text:
+        return "Ferry access"
+    return ""
 
 
 def _requested_date_ranges(query: dict[str, list[str]]) -> list[tuple[date, date]]:
@@ -568,6 +715,47 @@ def _requested_date_ranges(query: dict[str, list[str]]) -> list[tuple[date, date
         window_start = today
         window_end = today + timedelta(days=183)
     return _weekend_ranges_between(window_start, window_end)
+
+
+def _validate_refresh_query(query: dict[str, list[str]]) -> str:
+    people = int(_as_float(_first(query, "people", "4"), 4))
+    if people < 2 or people > 15:
+        return "Group size must be between 2 and 15 people."
+
+    distance_mode = _first(query, "distanceMode", "hours")
+    distance = int(_as_float(_first(query, "distance", "180"), 180))
+    if distance_mode == "hours":
+        if distance not in ALLOWED_DRIVE_MINUTES:
+            return "Drive time must be one of 1, 2, 3, 4, or 5 hours."
+    elif distance_mode == "miles":
+        if distance not in ALLOWED_MILE_DISTANCES:
+            return "Distance must be one of 20, 30, 50, or 80 miles."
+    else:
+        return "Distance mode must be hours or miles."
+
+    start_date = _parse_iso_date(_first(query, "startDate"))
+    end_date = _parse_iso_date(_first(query, "endDate"))
+    if start_date or end_date:
+        start = start_date or end_date
+        end = end_date or start_date
+        if start is None or end is None:
+            return "Invalid exact date range."
+        nights = max(1, (end - start).days)
+        if nights > MAX_EXACT_STAY_NIGHTS:
+            return f"Exact stay refresh is limited to {MAX_EXACT_STAY_NIGHTS} nights."
+        return ""
+
+    month = _first(query, "month")
+    if month and month != "any":
+        if not _weekend_ranges_for_month(month):
+            return "Month must be in YYYY-MM format."
+        return ""
+
+    window_start = _parse_iso_date(_first(query, "windowStart"))
+    window_end = _parse_iso_date(_first(query, "windowEnd"))
+    if window_start and window_end and (window_end - window_start).days > MAX_REFRESH_WINDOW_DAYS:
+        return f"Refresh window is limited to {MAX_REFRESH_WINDOW_DAYS} days."
+    return ""
 
 
 def _weekend_ranges_for_month(month: str) -> list[tuple[date, date]]:
@@ -702,7 +890,7 @@ def _matches_query(item: dict[str, object], query: dict[str, list[str]]) -> bool
 
 
 def _ranges_overlap(start_a: str, end_a: str, start_b: str, end_b: str) -> bool:
-    return start_a <= end_b and end_a >= start_b
+    return start_a < end_b and end_a > start_b
 
 
 def _months_in_results(results: list[dict[str, object]]) -> list[str]:
@@ -760,7 +948,9 @@ def _drive_minutes_to_miles(minutes: float) -> float:
         return 70
     if minutes <= 180:
         return 110
-    return 150
+    if minutes <= 240:
+        return 150
+    return 190
 
 
 def _refresh_status_path(results_path: Path) -> Path:
@@ -810,6 +1000,7 @@ def main() -> None:
     parser.add_argument(
         "--api-password",
         default=os.environ.get("CAMPSITE_WATCH_API_PASSWORD", os.environ.get("CAMPSITE_WATCH_API_TOKEN", "")),
+        help="shared password required before the website can trigger live refreshes",
     )
     parser.add_argument("--api-token", default="")
     args = parser.parse_args()

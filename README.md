@@ -94,7 +94,7 @@ python -m pip install -e '.[browser]'
 python -m playwright install --with-deps chromium
 ```
 
-Start the local API. Keep it bound to localhost; Tailscale Serve will provide tailnet HTTPS. Set a shared NAS password so the public GitHub Pages frontend can query only when a trusted user enters it:
+Start the local API. Keep it bound to localhost; Tailscale Serve will provide tailnet HTTPS. Set a shared NAS password so the public GitHub Pages frontend can trigger live refreshes only when a trusted user enters it:
 
 ```bash
 export CAMPSITE_WATCH_API_PASSWORD="choose-a-private-password"
@@ -120,7 +120,7 @@ https://<nas-device>.<tailnet-name>.ts.net
 
 Do not use `tailscale funnel` for this API unless you intentionally want public internet exposure. Prefer Tailscale ACLs that allow only your trusted users/devices to reach the NAS service.
 
-When a user searches, the website asks for the NAS password and sends it only with that browser request. Do not put the password in the public frontend source.
+Search reads the latest saved NAS result without a password. Refreshing live availability is a write action: the website asks for the NAS password and sends it only with that refresh request. Do not put the password in the public frontend source.
 
 The API contract is:
 
@@ -129,6 +129,8 @@ GET /api/search?zip=98040&people=4&distance=80&distanceMode=miles&month=2026-08
 POST /api/refresh?zip=98040&people=4&distance=240&distanceMode=hours&month=2026-11
 GET /api/refresh-status
 ```
+
+`GET /api/search` and `GET /api/refresh-status` are read-only and public to whoever can reach the NAS URL. `POST /api/refresh` requires `Authorization: Bearer <NAS password>` and fails closed if no API password is configured.
 
 Response:
 

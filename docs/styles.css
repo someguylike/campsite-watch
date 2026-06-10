@@ -293,7 +293,7 @@ select:focus {
 .timing-layout {
   display: grid;
   align-items: stretch;
-  grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 10px;
 }
 
@@ -418,6 +418,16 @@ button:disabled {
   font-size: 0.78rem;
   font-weight: 820;
   text-decoration: none;
+}
+
+.access-badge {
+  border: 1px solid rgb(183 121 31 / 38%);
+  border-radius: 999px;
+  background: #fff6e6;
+  color: #7a4b00;
+  font-size: 0.74rem;
+  font-weight: 850;
+  padding: 3px 8px;
 }
 
 .park-title-link:hover {
