@@ -1217,7 +1217,7 @@ function renderSiteLinks(item) {
     .map((site) => {
       const directSite = hasDistinctSiteReservationUrl(item, site);
       const title = directSite ? "Open booking with this campsite selected" : "Open this park and weekend";
-      return `<li><a class="site-chip${directSite ? " direct-site" : ""}" href="${escapeHtml(reservationUrl(item, site))}" target="_blank" rel="noreferrer" title="${escapeHtml(title)}">${escapeHtml(siteLoopName(site))} ${escapeHtml(siteName(site))}${tentAllowanceMarkup(site)}</a></li>`;
+      return `<li><a class="site-chip${directSite ? " direct-site" : ""}" href="${escapeHtml(reservationUrl(item, site))}" target="_blank" rel="noreferrer" title="${escapeHtml(title)}">${escapeHtml(siteLoopName(site))} ${escapeHtml(siteName(site))}</a></li>`;
     })
     .join("");
 }
@@ -1464,12 +1464,6 @@ function siteLoopName(site) {
 function siteName(site) {
   if (Array.isArray(site)) return site[1] || "";
   return site.name || "";
-}
-
-function tentAllowanceMarkup(site) {
-  const count = Number(Array.isArray(site) ? site[2] : site.tentAllowance);
-  if (!Number.isFinite(count) || count <= 0) return "";
-  return ` <span class="site-chip-detail">${count} tent${count === 1 ? "" : "s"}</span>`;
 }
 
 function formatDate(value) {
