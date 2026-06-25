@@ -877,10 +877,7 @@ function populateDateFilters() {
       .map((month) => `<option value="${month}">${formatMonth(month)}</option>`)
       .join(""),
   );
-  const anyMonthOption = monthFilter.querySelector('option[value="any"]');
-  if (anyMonthOption) {
-    monthFilter.append(anyMonthOption);
-  }
+  monthFilter.insertAdjacentHTML("beforeend", '<option value="any" selected>Any weekend in the next 6 months</option>');
 }
 
 function searchWindow() {
