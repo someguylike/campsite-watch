@@ -364,8 +364,10 @@ const refreshStatusPanel = document.querySelector("#refresh-status-panel");
 const refreshStatusText = document.querySelector("#refresh-status-text");
 const refreshStatusMeta = document.querySelector("#refresh-status-meta");
 const refreshProgressBar = document.querySelector("#refresh-progress-bar");
+const refreshStatusLog = document.querySelector("#refresh-status-log");
 const timingModeInputs = [...document.querySelectorAll("input[name='timingMode']")];
 const timingCards = [...document.querySelectorAll("[data-mode-card]")];
+let lastRefreshLogKey = "";
 
 populateDateFilters();
 populateDistanceOptions();
@@ -549,6 +551,7 @@ async function triggerRefresh() {
   refreshButton.disabled = true;
   refreshButton.textContent = "Refreshing...";
   searchNote.textContent = "Asking the NAS to refresh campsite data.";
+  clearRefreshLog();
   updateRefreshStatusPanel({ status: "queued", message: "Starting refresh..." });
 
   const result = await postNasRefresh(apiBaseUrl);
@@ -694,7 +697,7 @@ function nasUrl(apiBaseUrl, path) {
 }
 
 async function pollRefreshStatus(apiBaseUrl) {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  for (let attempt = 0; attempt < 240; attempt += 1) {
     await sleep(3000);
     const status = await fetchRefreshStatus(apiBaseUrl);
     if (!status || status.error) return;
@@ -738,6 +741,7 @@ function updateRefreshStatusPanel(status) {
   refreshStatusPanel.hidden = false;
   refreshStatusText.textContent = refreshMessage(status);
   refreshStatusMeta.textContent = status.updatedAt ? `Updated ${formatDateTime(status.updatedAt)}` : "";
+  appendRefreshLog(status);
 
   const total = Number(status.total || 0);
   const checked = Number(status.checked || 0);
@@ -758,6 +762,41 @@ function updateRefreshStatusPanel(status) {
     ? 100
     : 8;
   refreshProgressBar.style.width = `${percent}%`;
+}
+
+function clearRefreshLog() {
+  lastRefreshLogKey = "";
+  if (refreshStatusLog) {
+    refreshStatusLog.replaceChildren();
+  }
+}
+
+function appendRefreshLog(status) {
+  if (!refreshStatusLog) return;
+  const message = refreshMessage(status);
+  const key = [
+    status.status || "",
+    message,
+    status.checked ?? "",
+    status.total ?? "",
+    status.found ?? "",
+  ].join("|");
+  if (key === lastRefreshLogKey) return;
+  lastRefreshLogKey = key;
+
+  const row = document.createElement("div");
+  row.className = "refresh-log-entry";
+
+  const time = document.createElement("time");
+  time.dateTime = status.updatedAt || new Date().toISOString();
+  time.textContent = formatLogTimestamp(status.updatedAt);
+
+  const text = document.createElement("span");
+  text.textContent = message;
+
+  row.append(time, text);
+  refreshStatusLog.append(row);
+  refreshStatusLog.scrollTop = refreshStatusLog.scrollHeight;
 }
 
 function nasErrorMessage(result) {
@@ -1059,6 +1098,16 @@ function formatDateTime(value) {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+  }).format(date);
+}
+
+function formatLogTimestamp(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
   }).format(date);
 }
 

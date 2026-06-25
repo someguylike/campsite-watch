@@ -423,6 +423,32 @@ button:disabled {
   transition: width 160ms ease;
 }
 
+.refresh-status-log {
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+  padding-top: 2px;
+}
+
+.refresh-log-entry {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.refresh-log-entry time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .results {
   display: grid;
   gap: 12px;
