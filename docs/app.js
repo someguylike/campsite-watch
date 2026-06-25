@@ -635,7 +635,7 @@ async function fetchNasResults(apiBaseUrl) {
 
 async function postNasRefresh(apiBaseUrl) {
   const url = nasUrl(apiBaseUrl, "/api/refresh");
-  return fetchNasJson(url, { method: "POST" }, { requireAuth: true });
+  return fetchNasJson(url, { method: "POST" }, { requireAuth: Boolean(apiPassword()) });
 }
 
 async function fetchRefreshStatus(apiBaseUrl) {

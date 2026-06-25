@@ -215,15 +215,16 @@ class ApiHandler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": "not_found"})
             return
 
-        if self._auth_rate_limited():
-            self._send_json(429, {"error": "rate_limited", "detail": "Too many failed refresh password attempts."})
-            return
+        if self.api_token:
+            if self._auth_rate_limited():
+                self._send_json(429, {"error": "rate_limited", "detail": "Too many failed refresh password attempts."})
+                return
 
-        if not self._authorized():
-            self._record_auth_failure()
-            self._send_json(401, {"error": "unauthorized"})
-            return
-        self._record_auth_success()
+            if not self._authorized():
+                self._record_auth_failure()
+                self._send_json(401, {"error": "unauthorized"})
+                return
+            self._record_auth_success()
 
         query = parse_qs(parsed_url.query)
         validation_error = _validate_refresh_query(query)
@@ -284,7 +285,7 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def _authorized(self) -> bool:
         if not self.api_token:
-            return False
+            return True
 
         auth = self.headers.get("Authorization", "")
         prefix = "Bearer "

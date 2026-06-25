@@ -15,13 +15,13 @@ from campsite_watch.api import _validate_refresh_query
 
 
 class ApiBehaviorTest(unittest.TestCase):
-    def test_write_auth_fails_closed_without_token(self) -> None:
+    def test_write_auth_is_optional_without_token(self) -> None:
         handler = object.__new__(ApiHandler)
         handler.api_token = ""
         handler.headers = {}
         handler.client_address = ("127.0.0.1", 12345)
 
-        self.assertFalse(handler._authorized())
+        self.assertTrue(handler._authorized())
 
     def test_auth_rate_limit_after_failed_attempts(self) -> None:
         handler = object.__new__(ApiHandler)

@@ -80,13 +80,8 @@ if [ ! -f "${APP_DIR}/data/latest-results.json" ]; then
   cp "${APP_DIR}/examples/latest-results.example.json" "${APP_DIR}/data/latest-results.json"
 fi
 
-if [ -f "${ENV_FILE}" ] && sudo grep -q '^CAMPSITE_WATCH_API_PASSWORD=' "${ENV_FILE}"; then
-  PASSWORD="$(sudo sed -n 's/^CAMPSITE_WATCH_API_PASSWORD=//p' "${ENV_FILE}" | head -1)"
-elif [ -f "${ENV_FILE}" ] && sudo grep -q '^CAMPSITE_WATCH_API_TOKEN=' "${ENV_FILE}"; then
-  PASSWORD="$(sudo sed -n 's/^CAMPSITE_WATCH_API_TOKEN=//p' "${ENV_FILE}" | head -1)"
-else
-  PASSWORD="$(openssl rand -base64 24)"
-  printf 'CAMPSITE_WATCH_API_PASSWORD=%s\n' "${PASSWORD}" | sudo tee "${ENV_FILE}" >/dev/null
+if [ ! -f "${ENV_FILE}" ]; then
+  printf 'CAMPSITE_WATCH_API_PASSWORD=\n' | sudo tee "${ENV_FILE}" >/dev/null
   sudo chmod 600 "${ENV_FILE}"
 fi
 
@@ -120,12 +115,11 @@ cat <<EOF
 
 Install complete.
 
-NAS password:
-${PASSWORD}
-
 Open the LAN-only website while connected to the same network as the NAS:
   URL:      http://${API_HOST}:${API_PORT}/
-  Password: ${PASSWORD}
+
+Refresh does not require a password when this service is LAN-only. To require one anyway,
+set CAMPSITE_WATCH_API_PASSWORD in ${ENV_FILE} and restart ${SERVICE_NAME}.
 
 Service commands:
   sudo systemctl status ${SERVICE_NAME}

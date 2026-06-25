@@ -94,10 +94,9 @@ python -m pip install -e '.[browser]'
 python -m playwright install --with-deps chromium
 ```
 
-Start the LAN-only API and website. Bind it to the NAS LAN address so it is reachable only from devices on the same network. Set a shared NAS password so refreshes still require a trusted user:
+Start the LAN-only API and website. Bind it to the NAS LAN address so it is reachable only from devices on the same network:
 
 ```bash
-export CAMPSITE_WATCH_API_PASSWORD="choose-a-private-password"
 campsite-watch \
   --serve-api \
   --api-host 192.168.1.123 \
@@ -121,7 +120,7 @@ sudo tailscale serve reset
 
 The public GitHub Pages snapshot remains useful when you are away from home, but the live NAS refresh flow is intended to run from the LAN-hosted site above. Many browsers block an HTTPS public page from calling an HTTP private-network API, so the LAN-hosted page is the reliable same-network path.
 
-Search reads the latest saved NAS result without a password. Refreshing live availability is a write action: the website asks for the NAS password and sends it only with that refresh request. Do not put the password in the public frontend source.
+Search reads the latest saved NAS result without a password. Refreshing live availability also works without a password when no `CAMPSITE_WATCH_API_PASSWORD` is configured. If you want an extra LAN-side guard, set `CAMPSITE_WATCH_API_PASSWORD` in `/etc/campsite-watch.env`, restart the service, and enter that password in the website before refreshing. Do not put the password in the public frontend source.
 
 The API contract is:
 
@@ -131,7 +130,7 @@ POST /api/refresh?zip=98040&people=4&distance=240&distanceMode=hours&month=2026-
 GET /api/refresh-status
 ```
 
-`GET /api/search` and `GET /api/refresh-status` are read-only and public to whoever can reach the NAS URL. `POST /api/refresh` requires `Authorization: Bearer <NAS password>` and fails closed if no API password is configured.
+`GET /api/search` and `GET /api/refresh-status` are read-only and public to whoever can reach the NAS URL. `POST /api/refresh` requires `Authorization: Bearer <NAS password>` only when `CAMPSITE_WATCH_API_PASSWORD` is configured.
 
 Response:
 
