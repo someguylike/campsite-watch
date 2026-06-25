@@ -159,6 +159,8 @@ class ApiHandler(BaseHTTPRequestHandler):
     allowed_origin = "https://someguylike.github.io"
     api_token = ""
     publish_snapshot_command = ""
+    service_name = "campsite-watch-api"
+    refresh_service_name = "campsite-watch-refresh"
     refresh_lock = threading.Lock()
     auth_failures: dict[str, list[float]] = {}
 
@@ -185,6 +187,10 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         if path == "/api/refresh-status":
             self._send_json(200, self._refresh_status())
+            return
+
+        if path == "/api/worker-status":
+            self._send_json(200, self._worker_status())
             return
 
         if path != "/api/search":
@@ -366,6 +372,32 @@ class ApiHandler(BaseHTTPRequestHandler):
         except (OSError, json.JSONDecodeError):
             return {"status": "error", "message": "Could not read refresh status."}
         return payload if isinstance(payload, dict) else {"status": "error", "message": "Bad refresh status file."}
+
+    def _worker_status(self) -> dict[str, object]:
+        refresh_unit = f"{self.refresh_service_name}.service"
+        refresh_timer = f"{self.refresh_service_name}.timer"
+        return {
+            "generatedAt": datetime.now(timezone.utc).isoformat(),
+            "api": {
+                "ok": True,
+                "service": self.service_name,
+                "resultsPath": str(self.results_path),
+                "docsDir": str(self.docs_dir),
+                "browserProfileDir": str(self.browser_profile_dir),
+            },
+            "service": _systemctl_show(self.service_name),
+            "refreshService": _systemctl_show(refresh_unit),
+            "refreshTimer": _systemctl_show(refresh_timer),
+            "timers": _command_output(["systemctl", "list-timers", refresh_timer, "--no-pager"], timeout=8),
+            "refreshStatus": self._refresh_status(),
+            "snapshots": [
+                _file_status(self.results_path),
+                _file_status(_refresh_status_path(self.results_path)),
+                _file_status(self.docs_dir / "latest-results.json"),
+            ],
+            "apiLogs": _command_output(["journalctl", "-u", self.service_name, "-n", "50", "--no-pager", "--output=short-iso"], timeout=8),
+            "refreshLogs": _command_output(["journalctl", "-u", refresh_unit, "-n", "80", "--no-pager", "--output=short-iso"], timeout=8),
+        }
 
     def _run_refresh(self, query: dict[str, list[str]]) -> None:
         status_path = _refresh_status_path(self.results_path)
@@ -1393,6 +1425,61 @@ def _drive_minutes_to_miles(minutes: float) -> float:
 
 def _refresh_status_path(results_path: Path) -> Path:
     return results_path.with_name("refresh-status.json")
+
+
+def _systemctl_show(unit: str) -> dict[str, object]:
+    properties = [
+        "Id",
+        "LoadState",
+        "ActiveState",
+        "SubState",
+        "UnitFileState",
+        "Result",
+        "ExecMainStatus",
+        "ActiveEnterTimestamp",
+        "InactiveEnterTimestamp",
+        "NextElapseUSecRealtime",
+        "LastTriggerUSec",
+    ]
+    result = _command_output(["systemctl", "show", unit, "--no-pager", *(f"--property={item}" for item in properties)], timeout=8)
+    values: dict[str, object] = {"unit": unit, "ok": result["returnCode"] == 0}
+    if result["stdout"]:
+        for line in str(result["stdout"]).splitlines():
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key] = value
+    if result["returnCode"] != 0:
+        values["error"] = result["stderr"] or result["stdout"]
+    return values
+
+
+def _command_output(command: list[str], timeout: int = 10) -> dict[str, object]:
+    try:
+        completed = subprocess.run(command, check=False, capture_output=True, text=True, timeout=timeout)
+    except FileNotFoundError as error:
+        return {"command": command, "returnCode": 127, "stdout": "", "stderr": str(error)}
+    except subprocess.TimeoutExpired:
+        return {"command": command, "returnCode": 124, "stdout": "", "stderr": f"Command timed out after {timeout}s."}
+    return {
+        "command": command,
+        "returnCode": completed.returncode,
+        "stdout": completed.stdout.strip(),
+        "stderr": completed.stderr.strip(),
+    }
+
+
+def _file_status(path: Path) -> dict[str, object]:
+    try:
+        stat = path.stat()
+    except OSError as error:
+        return {"path": str(path), "exists": False, "error": str(error)}
+    return {
+        "path": str(path),
+        "exists": True,
+        "size": stat.st_size,
+        "modifiedAt": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+    }
 
 
 def _write_refresh_status(

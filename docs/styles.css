@@ -91,6 +91,10 @@ button,
   backdrop-filter: blur(10px);
 }
 
+.topbar-link {
+  white-space: nowrap;
+}
+
 .eyebrow {
   margin: 0 0 4px;
   color: var(--accent);
@@ -465,6 +469,101 @@ button:disabled {
   gap: 12px;
 }
 
+.worker-layout {
+  max-width: 1180px;
+}
+
+.worker-panel {
+  width: min(100%, 1180px);
+}
+
+.worker-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.worker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.worker-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 12px;
+}
+
+.worker-card h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.worker-card dl {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 7px 10px;
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.worker-card dt {
+  color: var(--muted);
+  font-weight: 720;
+}
+
+.worker-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.worker-list {
+  display: grid;
+  gap: 7px;
+}
+
+.worker-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 7px;
+  font-size: 0.84rem;
+}
+
+.worker-list-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.worker-list-row span {
+  overflow-wrap: anywhere;
+}
+
+.worker-list-row strong {
+  white-space: nowrap;
+}
+
+.worker-log {
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  padding: 10px;
+  white-space: pre-wrap;
+}
+
 .proximity-panel {
   display: grid;
   gap: 12px;
@@ -820,11 +919,21 @@ button:disabled {
 
   .filter-grid,
   .timing-layout,
+  .worker-grid,
   .result-header,
   .weekend-row-header,
   .button-row {
     align-items: stretch;
     flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .worker-heading {
+    display: grid;
+  }
+
+  .worker-card dl,
+  .worker-list-row {
     grid-template-columns: 1fr;
   }
 

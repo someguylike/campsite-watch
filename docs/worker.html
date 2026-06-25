@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Campsite Watch Worker</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Local NAS diagnostics</p>
+        <h1>Worker Status</h1>
+      </div>
+      <a class="secondary-button topbar-link" href="./index.html">Campsite search</a>
+    </header>
+
+    <main class="layout worker-layout">
+      <section class="side-panel worker-panel" aria-label="Worker diagnostics">
+        <div class="worker-heading">
+          <div>
+            <h2>NAS worker</h2>
+            <p id="worker-summary" class="form-intro">Loading worker status...</p>
+          </div>
+          <button id="worker-refresh-button" class="secondary-button" type="button">Refresh status</button>
+        </div>
+
+        <div class="worker-grid">
+          <article class="worker-card">
+            <h3>API service</h3>
+            <dl id="api-service-details"></dl>
+          </article>
+          <article class="worker-card">
+            <h3>Daily refresh timer</h3>
+            <dl id="refresh-timer-details"></dl>
+          </article>
+          <article class="worker-card">
+            <h3>Current refresh</h3>
+            <dl id="current-refresh-details"></dl>
+          </article>
+          <article class="worker-card">
+            <h3>Snapshot files</h3>
+            <div id="snapshot-details" class="worker-list"></div>
+          </article>
+        </div>
+
+        <article class="worker-card">
+          <h3>Timer schedule</h3>
+          <pre id="timer-output" class="worker-log"></pre>
+        </article>
+
+        <article class="worker-card">
+          <h3>Recent refresh logs</h3>
+          <pre id="refresh-log-output" class="worker-log"></pre>
+        </article>
+
+        <article class="worker-card">
+          <h3>Recent API logs</h3>
+          <pre id="api-log-output" class="worker-log"></pre>
+        </article>
+
+      </section>
+    </main>
+
+    <script src="./worker.js?v=worker-status-page-20260625"></script>
+  </body>
+</html>

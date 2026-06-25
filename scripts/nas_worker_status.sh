@@ -43,16 +43,6 @@ sudo journalctl -u "${SERVICE_NAME}" -n 80 --no-pager || true
 section "Recent periodic refresh logs"
 sudo journalctl -u "${REFRESH_SERVICE_NAME}.service" -n 120 --no-pager || true
 
-section "Old cron entries"
-{
-  echo "-- user crontab --"
-  crontab -l 2>/dev/null || true
-  echo "-- root crontab --"
-  sudo crontab -l 2>/dev/null || true
-  echo "-- /etc cron files --"
-  sudo grep -R -n "campsite-watch\\|refresh_next_six_months" /etc/cron* 2>/dev/null || true
-} | sed '/^$/d'
-
 section "Snapshot files"
 for path in \
   "${APP_DIR}/data/latest-results.json" \
