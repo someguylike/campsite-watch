@@ -659,8 +659,9 @@ async function fetchNasJson(url, options = {}, { requireAuth = false } = {}) {
     const response = await fetch(url.toString(), { ...options, headers, signal: controller.signal });
     window.clearTimeout(timeout);
     if (response.status === 401) return { error: "unauthorized" };
-    if (!response.ok) return { error: "http", status: response.status };
-    return response.json();
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) return { error: "http", status: response.status, detail: payload?.detail || payload?.error || "" };
+    return payload;
   } catch (error) {
     if (timeout) window.clearTimeout(timeout);
     return {
@@ -724,7 +725,7 @@ function nasErrorMessage(result) {
     return "Could not reach the private LAN NAS URL. Connect this browser/device to the same network as the NAS, then try again.";
   }
   if (result.error === "http") {
-    return `NAS request failed with HTTP ${result.status}.`;
+    return `NAS request failed with HTTP ${result.status}${result.detail ? `: ${result.detail}` : ""}.`;
   }
   if (result.error === "bad_response") {
     return "NAS returned an unexpected response.";
