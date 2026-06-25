@@ -120,7 +120,7 @@ sudo tailscale serve reset
 
 The public GitHub Pages snapshot remains useful when you are away from home, but the live NAS refresh flow runs only from the LAN-hosted site above. The public page does not call the private NAS URL.
 
-Search reads the latest saved NAS result without a password. Refreshing live availability also works without a password because the service is intended to be LAN-only.
+Search reads the latest saved NAS result. Refreshing live availability runs from the LAN-only site.
 
 To set up the browser profile from a Mac and copy it to the NAS in one command:
 

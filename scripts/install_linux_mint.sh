@@ -122,7 +122,7 @@ Install complete.
 Open the LAN-only website while connected to the same network as the NAS:
   URL:      http://${API_HOST}:${API_PORT}/
 
-Refresh does not require a password because this service is intended to stay LAN-only.
+Refresh runs from the LAN-only site.
 
 After refresh completes, the service automatically runs:
   ${APP_DIR}/scripts/publish_public_snapshot.sh

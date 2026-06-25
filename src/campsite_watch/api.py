@@ -1374,7 +1374,7 @@ def main() -> None:
     parser.add_argument(
         "--api-password",
         default="",
-        help="deprecated; LAN refresh no longer checks a website password",
+        help=argparse.SUPPRESS,
     )
     parser.add_argument("--api-token", default="")
     args = parser.parse_args()
