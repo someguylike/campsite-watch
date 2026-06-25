@@ -94,31 +94,32 @@ python -m pip install -e '.[browser]'
 python -m playwright install --with-deps chromium
 ```
 
-Start the local API. Keep it bound to localhost; Tailscale Serve will provide tailnet HTTPS. Set a shared NAS password so the public GitHub Pages frontend can trigger live refreshes only when a trusted user enters it:
+Start the LAN-only API and website. Bind it to the NAS LAN address so it is reachable only from devices on the same network. Set a shared NAS password so refreshes still require a trusted user:
 
 ```bash
 export CAMPSITE_WATCH_API_PASSWORD="choose-a-private-password"
 campsite-watch \
   --serve-api \
-  --api-host 127.0.0.1 \
+  --api-host 192.168.1.123 \
   --api-port 8787 \
-  --allowed-origin https://someguylike.github.io
+  --results-json ./data/latest-results.json \
+  --docs-dir ./docs \
+  --allowed-origin http://192.168.1.123:8787
 ```
 
-Expose it to your tailnet with Tailscale Serve, not Funnel:
-
-```bash
-sudo tailscale serve --bg --https=443 http://127.0.0.1:8787
-tailscale serve status
-```
-
-The website defaults to your private Tailscale NAS URL:
+Open the site from a device on the same LAN:
 
 ```text
-https://<nas-device>.<tailnet-name>.ts.net
+http://192.168.1.123:8787/
 ```
 
-Do not use `tailscale funnel` for this API unless you intentionally want public internet exposure. Prefer Tailscale ACLs that allow only your trusted users/devices to reach the NAS service.
+Do not configure Tailscale Funnel, router port forwarding, or public reverse proxying for this API if you want LAN-only access. If you previously configured Tailscale Serve or Funnel for this project on the NAS, clear it there:
+
+```bash
+sudo tailscale serve reset
+```
+
+The public GitHub Pages snapshot remains useful when you are away from home, but the live NAS refresh flow is intended to run from the LAN-hosted site above. Many browsers block an HTTPS public page from calling an HTTP private-network API, so the LAN-hosted page is the reliable same-network path.
 
 Search reads the latest saved NAS result without a password. Refreshing live availability is a write action: the website asks for the NAS password and sends it only with that refresh request. Do not put the password in the public frontend source.
 

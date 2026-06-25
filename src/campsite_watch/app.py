@@ -88,6 +88,7 @@ def main() -> None:
     parser.add_argument("--api-host", default="127.0.0.1")
     parser.add_argument("--api-port", default=8787, type=int)
     parser.add_argument("--results-json", default="./data/latest-results.json", type=Path)
+    parser.add_argument("--docs-dir", default="./docs", type=Path)
     parser.add_argument("--allowed-origin", default="https://someguylike.github.io")
     parser.add_argument(
         "--api-password",
@@ -105,7 +106,14 @@ def main() -> None:
         return
 
     if args.serve_api:
-        serve_api(args.api_host, args.api_port, args.results_json, args.allowed_origin, args.api_password or args.api_token)
+        serve_api(
+            args.api_host,
+            args.api_port,
+            args.results_json,
+            args.allowed_origin,
+            args.api_password or args.api_token,
+            args.docs_dir,
+        )
         return
 
     if args.once:

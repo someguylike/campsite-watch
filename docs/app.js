@@ -1,6 +1,6 @@
 const ORIGIN = "98040";
 const ORIGIN_COORDS = [47.5707, -122.2221];
-const DEFAULT_API_BASE_URL = "https://nampham-server.tail74e1b3.ts.net";
+const DEFAULT_API_BASE_URL = "http://192.168.1.123:8787";
 const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
 const routeCache = new Map();
 
@@ -449,7 +449,7 @@ document.querySelector("#location-button").addEventListener("click", () => {
 
 document.querySelector("#sync-button")?.addEventListener("click", () => {
   const current = apiBase();
-  const next = window.prompt("Private Tailscale NAS URL", current || DEFAULT_API_BASE_URL);
+  const next = window.prompt("Private LAN NAS URL", current || DEFAULT_API_BASE_URL);
   if (next === null) return;
 
   const trimmed = next.trim().replace(/\/+$/, "");
@@ -705,10 +705,10 @@ function refreshMessage(status) {
 
 function nasErrorMessage(result) {
   if (result.error === "timeout") {
-    return "NAS request timed out. Make sure this browser is connected to Tailscale and try again.";
+    return "NAS request timed out. Make sure this browser is on the same network as the NAS and try again.";
   }
   if (result.error === "network") {
-    return "Could not reach the private NAS URL. Connect this browser/device to Tailscale, then try again.";
+    return "Could not reach the private LAN NAS URL. Connect this browser/device to the same network as the NAS, then try again.";
   }
   if (result.error === "http") {
     return `NAS request failed with HTTP ${result.status}.`;
@@ -936,7 +936,18 @@ function driveTimeLabel(value) {
 }
 
 function apiBase() {
-  return window.CAMPSITE_WATCH_API_BASE_URL || window.localStorage.getItem(API_BASE_STORAGE_KEY) || DEFAULT_API_BASE_URL;
+  if (window.CAMPSITE_WATCH_API_BASE_URL) {
+    return window.CAMPSITE_WATCH_API_BASE_URL;
+  }
+
+  const saved = window.localStorage.getItem(API_BASE_STORAGE_KEY);
+  if (saved && !/\.ts\.net|tailscale/i.test(saved)) {
+    return saved;
+  }
+  if (saved) {
+    window.localStorage.removeItem(API_BASE_STORAGE_KEY);
+  }
+  return DEFAULT_API_BASE_URL;
 }
 
 function apiPassword() {

@@ -6,6 +6,7 @@ from html import unescape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import math
+import mimetypes
 import os
 from pathlib import Path
 import re
@@ -151,6 +152,7 @@ PARKS = [
 
 class ApiHandler(BaseHTTPRequestHandler):
     results_path = Path("./data/latest-results.json")
+    docs_dir = Path("./docs")
     allowed_origin = "https://someguylike.github.io"
     api_token = ""
     refresh_lock = threading.Lock()
@@ -163,12 +165,16 @@ class ApiHandler(BaseHTTPRequestHandler):
         self._send_headers(204)
 
     def do_GET(self) -> None:
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        if path in {"/", "/index.html"} or (not path.startswith("/api/") and path != "/healthz"):
+            self._send_static(path)
+            return
+
         if not self._origin_allowed():
             self._send_json(403, {"error": "origin_not_allowed"})
             return
 
-        parsed_url = urlparse(self.path)
-        path = parsed_url.path
         if path == "/healthz":
             self._send_json(200, {"ok": True})
             return
@@ -248,6 +254,10 @@ class ApiHandler(BaseHTTPRequestHandler):
         if status != 204:
             self.wfile.write(body)
 
+    def _send_bytes(self, status: int, body: bytes, content_type: str) -> None:
+        self._send_headers(status, content_length=len(body), content_type=content_type)
+        self.wfile.write(body)
+
     def _send_headers(
         self,
         status: int,
@@ -260,6 +270,8 @@ class ApiHandler(BaseHTTPRequestHandler):
         if cors_origin:
             self.send_header("Access-Control-Allow-Origin", cors_origin)
             self.send_header("Vary", "Origin")
+        if self.headers.get("Access-Control-Request-Private-Network", "").lower() == "true":
+            self.send_header("Access-Control-Allow-Private-Network", "true")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header(
             "Access-Control-Allow-Headers",
@@ -310,6 +322,24 @@ class ApiHandler(BaseHTTPRequestHandler):
         if self.allowed_origin == "*":
             return origin if self.api_token and origin else "*"
         return origin if origin == self.allowed_origin else ""
+
+    def _send_static(self, path: str) -> None:
+        relative = "index.html" if path in {"", "/"} else path.lstrip("/")
+        if "/" in relative:
+            self._send_json(404, {"error": "not_found"})
+            return
+
+        file_path = (self.docs_dir / relative).resolve()
+        docs_dir = self.docs_dir.resolve()
+        if docs_dir not in file_path.parents or not file_path.is_file():
+            self._send_json(404, {"error": "not_found"})
+            return
+
+        content_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+        try:
+            self._send_bytes(200, file_path.read_bytes(), content_type)
+        except OSError:
+            self._send_json(503, {"error": "static_unavailable"})
 
     def _filtered_payload(self, payload: dict[str, object], query: dict[str, list[str]]) -> dict[str, object]:
         results = [item for item in payload.get("results", []) if isinstance(item, dict)]
@@ -1204,14 +1234,26 @@ def _looks_blocked(text: str) -> bool:
     )
 
 
-def serve_api(host: str, port: int, results_path: Path, allowed_origin: str, api_token: str = "") -> None:
+def serve_api(
+    host: str,
+    port: int,
+    results_path: Path,
+    allowed_origin: str,
+    api_token: str = "",
+    docs_dir: Path = Path("./docs"),
+) -> None:
     handler = type(
         "ConfiguredApiHandler",
         (ApiHandler,),
-        {"results_path": results_path, "allowed_origin": allowed_origin, "api_token": api_token},
+        {
+            "results_path": results_path,
+            "docs_dir": docs_dir,
+            "allowed_origin": allowed_origin,
+            "api_token": api_token,
+        },
     )
     server = ThreadingHTTPServer((host, port), handler)
-    print(f"Serving campsite API on http://{host}:{port} using {results_path}")
+    print(f"Serving campsite API and website on http://{host}:{port} using {results_path}")
     server.serve_forever()
 
 
@@ -1220,6 +1262,7 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=8787, type=int)
     parser.add_argument("--results", default="./data/latest-results.json", type=Path)
+    parser.add_argument("--docs-dir", default="./docs", type=Path)
     parser.add_argument("--allowed-origin", default="https://someguylike.github.io")
     parser.add_argument(
         "--api-password",
@@ -1228,7 +1271,7 @@ def main() -> None:
     )
     parser.add_argument("--api-token", default="")
     args = parser.parse_args()
-    serve_api(args.host, args.port, args.results, args.allowed_origin, args.api_password or args.api_token)
+    serve_api(args.host, args.port, args.results, args.allowed_origin, args.api_password or args.api_token, args.docs_dir)
 
 
 if __name__ == "__main__":

@@ -4,8 +4,9 @@ set -euo pipefail
 APP_DIR="${APP_DIR:-/opt/campsite-watch}"
 APP_USER="${APP_USER:-${SUDO_USER:-$USER}}"
 REPO_URL="${REPO_URL:-https://github.com/someguylike/campsite-watch.git}"
+API_HOST="${API_HOST:-192.168.1.123}"
 API_PORT="${API_PORT:-8787}"
-ALLOWED_ORIGIN="${ALLOWED_ORIGIN:-https://someguylike.github.io}"
+ALLOWED_ORIGIN="${ALLOWED_ORIGIN:-http://${API_HOST}:${API_PORT}}"
 ENV_FILE="${ENV_FILE:-/etc/campsite-watch.env}"
 SERVICE_NAME="${SERVICE_NAME:-campsite-watch-api}"
 
@@ -74,7 +75,7 @@ Type=simple
 User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=${ENV_FILE}
-ExecStart=${APP_DIR}/.venv/bin/campsite-watch --serve-api --api-host 127.0.0.1 --api-port ${API_PORT} --results-json ${APP_DIR}/data/latest-results.json --allowed-origin ${ALLOWED_ORIGIN}
+ExecStart=${APP_DIR}/.venv/bin/campsite-watch --serve-api --api-host ${API_HOST} --api-port ${API_PORT} --results-json ${APP_DIR}/data/latest-results.json --docs-dir ${APP_DIR}/docs --allowed-origin ${ALLOWED_ORIGIN}
 Restart=on-failure
 RestartSec=5
 
@@ -86,20 +87,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now "${SERVICE_NAME}"
 
 echo "Checking API health..."
-curl --fail --silent "http://127.0.0.1:${API_PORT}/healthz" >/dev/null
-
-if command -v tailscale >/dev/null 2>&1; then
-  echo "Configuring Tailscale Serve for tailnet-only HTTPS..."
-  if sudo tailscale status >/dev/null 2>&1; then
-    sudo tailscale serve --bg --https=443 "http://127.0.0.1:${API_PORT}" || true
-    sudo tailscale serve status || true
-  else
-    echo "Tailscale is installed but not connected. Run: sudo tailscale up"
-  fi
-else
-  echo "Tailscale command not found. Install/connect Tailscale, then run:"
-  echo "  sudo tailscale serve --bg --https=443 http://127.0.0.1:${API_PORT}"
-fi
+curl --fail --silent "http://${API_HOST}:${API_PORT}/healthz" >/dev/null
 
 cat <<EOF
 
@@ -108,8 +96,8 @@ Install complete.
 NAS password:
 ${PASSWORD}
 
-Use this in the website refresh/NAS setup prompt:
-  URL:      https://<nas-device>.<tailnet-name>.ts.net
+Open the LAN-only website while connected to the same network as the NAS:
+  URL:      http://${API_HOST}:${API_PORT}/
   Password: ${PASSWORD}
 
 Service commands:
