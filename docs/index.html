@@ -117,12 +117,21 @@
           <p id="search-note" class="field-help">
             Search reads the latest saved NAS results. Refresh asks the NAS to check live availability and requires the password.
           </p>
+          <div id="refresh-status-panel" class="refresh-status-panel" hidden>
+            <div class="refresh-status-row">
+              <span id="refresh-status-text">Refresh status</span>
+              <span id="refresh-status-meta"></span>
+            </div>
+            <div class="refresh-progress" aria-hidden="true">
+              <span id="refresh-progress-bar"></span>
+            </div>
+          </div>
         </form>
 
         <div id="results" class="results" aria-live="polite"></div>
       </section>
     </main>
 
-    <script src="./app.js?v=snapshot-date-20260625"></script>
+    <script src="./app.js?v=refresh-progress-20260625"></script>
   </body>
 </html>

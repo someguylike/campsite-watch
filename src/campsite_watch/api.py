@@ -13,6 +13,7 @@ import re
 from secrets import compare_digest
 import threading
 import time
+from typing import Callable
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -396,7 +397,19 @@ class ApiHandler(BaseHTTPRequestHandler):
             requested_months,
         )
         try:
-            crawler = GoingToCampCrawler()
+            def progress(done: int, total: int, park_name: str, start: date, end: date, found_count: int) -> None:
+                _write_refresh_status(
+                    status_path,
+                    "running",
+                    (
+                        f"Refresh running. Checked {done} of {total} park/weekend combinations. "
+                        f"Latest: {park_name} {start:%b} {start.day}-{end.day}. Found {found_count} matches so far."
+                    ),
+                    requested_months,
+                    {"checked": done, "total": total, "found": found_count},
+                )
+
+            crawler = GoingToCampCrawler(progress_callback=progress)
             results = crawler.search(query)
             payload = self._merged_refresh_payload(results, query, requested_months)
             months = payload["checkedMonths"] if isinstance(payload.get("checkedMonths"), list) else requested_months
@@ -475,12 +488,16 @@ class ApiHandler(BaseHTTPRequestHandler):
 
 
 class GoingToCampCrawler:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        progress_callback: Callable[[int, int, str, date, date, int], None] | None = None,
+    ) -> None:
         self.resource_cache: dict[int, dict[str, dict[str, object]]] = {}
         self.map_label_cache: dict[int, dict[int, str]] = {}
         self.resource_locations: list[dict[str, object]] | None = None
         self.origin_cache: dict[str, tuple[float, float]] = {}
         self.park_image_cache: dict[str, list[str]] = {}
+        self.progress_callback = progress_callback
 
     def search(self, query: dict[str, list[str]]) -> list[dict[str, object]]:
         ranges = _requested_date_ranges(query)
@@ -494,24 +511,27 @@ class GoingToCampCrawler:
                 "Choose an exact date or a single month for large-distance searches."
             )
 
+        checked = 0
         for park in parks:
             try:
                 resources = self._resources_for_park(int(park["resourceLocationId"]))
                 map_labels = self._map_labels_for_park(int(park["resourceLocationId"]))
                 for start, end in ranges:
+                    checked += 1
                     available_sites = self._available_sites(park, resources, map_labels, start, end, people)
-                    if not available_sites:
-                        continue
-                    park = self._with_park_media(park)
-                    results.append(
-                        {
-                            **park,
-                            "date": start.isoformat(),
-                            "end": end.isoformat(),
-                            "availableTentSites": len(available_sites),
-                            "sampleSites": available_sites[:8],
-                        }
-                    )
+                    if available_sites:
+                        park = self._with_park_media(park)
+                        results.append(
+                            {
+                                **park,
+                                "date": start.isoformat(),
+                                "end": end.isoformat(),
+                                "availableTentSites": len(available_sites),
+                                "sampleSites": available_sites[:8],
+                            }
+                        )
+                    if self.progress_callback:
+                        self.progress_callback(checked, check_count, str(park.get("park", "Unknown park")), start, end, len(results))
             except HTTPError:
                 raise
             except (TimeoutError, URLError, OSError, ValueError, json.JSONDecodeError):
@@ -1224,13 +1244,21 @@ def _refresh_status_path(results_path: Path) -> Path:
     return results_path.with_name("refresh-status.json")
 
 
-def _write_refresh_status(path: Path, status: str, message: str, requested_months: list[str]) -> None:
+def _write_refresh_status(
+    path: Path,
+    status: str,
+    message: str,
+    requested_months: list[str],
+    extra: dict[str, object] | None = None,
+) -> None:
     payload = {
         "status": status,
         "message": message,
         "requestedMonths": requested_months,
         "updatedAt": datetime.now(timezone.utc).isoformat(),
     }
+    if extra:
+        payload.update(extra)
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_suffix(f"{path.suffix}.tmp")
     temp_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")

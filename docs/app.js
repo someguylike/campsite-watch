@@ -361,6 +361,10 @@ const searchButton = document.querySelector("#search-button");
 const refreshButton = document.querySelector("#refresh-button");
 const refreshAuth = document.querySelector("#refresh-auth");
 const nasPasswordInput = document.querySelector("#nas-password-input");
+const refreshStatusPanel = document.querySelector("#refresh-status-panel");
+const refreshStatusText = document.querySelector("#refresh-status-text");
+const refreshStatusMeta = document.querySelector("#refresh-status-meta");
+const refreshProgressBar = document.querySelector("#refresh-progress-bar");
 const timingModeInputs = [...document.querySelectorAll("input[name='timingMode']")];
 const timingCards = [...document.querySelectorAll("[data-mode-card]")];
 
@@ -538,6 +542,7 @@ async function triggerRefresh() {
   refreshButton.disabled = true;
   refreshButton.textContent = "Refreshing...";
   searchNote.textContent = "Asking the NAS to refresh campsite data.";
+  updateRefreshStatusPanel({ status: "queued", message: "Starting refresh..." });
 
   const result = await postNasRefresh(apiBaseUrl);
   if (result?.error === "password_required") {
@@ -550,8 +555,10 @@ async function triggerRefresh() {
   } else if (result) {
     if (result.error) {
       searchNote.textContent = nasErrorMessage(result);
+      updateRefreshStatusPanel(result);
     } else {
       hideRefreshAuth();
+      updateRefreshStatusPanel(result);
       searchNote.textContent = refreshMessage(result);
       await pollRefreshStatus(apiBaseUrl);
       await runSearch();
@@ -695,7 +702,9 @@ async function pollRefreshStatus(apiBaseUrl) {
     await sleep(3000);
     const status = await fetchRefreshStatus(apiBaseUrl);
     if (!status || status.error) return;
+    updateRefreshStatusPanel(status);
     searchNote.textContent = refreshMessage(status);
+    updateRefreshButton(status);
     if (status.status && !["queued", "running"].includes(status.status)) return;
   }
   searchNote.textContent = "NAS refresh is still running. Search again in a moment to load the latest snapshot.";
@@ -715,7 +724,33 @@ function refreshMessage(status) {
   const months = Array.isArray(status.requestedMonths) && status.requestedMonths.length
     ? ` (${status.requestedMonths.map(formatMonth).join(", ")})`
     : "";
+  if (status.status === "running" && Number(status.total) > 0) {
+    return `Checking availability ${Number(status.checked || 0)} of ${Number(status.total)}. Found ${Number(status.found || 0)} matches so far.${months}`;
+  }
   return `${status.message || "Refresh status updated."}${months}`;
+}
+
+function updateRefreshButton(status) {
+  if (status.status === "running" && Number(status.total) > 0) {
+    refreshButton.textContent = `Checking ${Number(status.checked || 0)}/${Number(status.total)}`;
+  }
+}
+
+function updateRefreshStatusPanel(status) {
+  if (!refreshStatusPanel || !refreshStatusText || !refreshProgressBar) return;
+  refreshStatusPanel.hidden = false;
+  refreshStatusText.textContent = refreshMessage(status);
+  refreshStatusMeta.textContent = status.updatedAt ? `Updated ${formatDateTime(status.updatedAt)}` : "";
+
+  const total = Number(status.total || 0);
+  const checked = Number(status.checked || 0);
+  const completeStatuses = ["complete", "blocked", "error", "auth_failed", "auth_rate_limited"];
+  const percent = total > 0
+    ? Math.max(0, Math.min(100, Math.round((checked / total) * 100)))
+    : completeStatuses.includes(status.status)
+    ? 100
+    : 8;
+  refreshProgressBar.style.width = `${percent}%`;
 }
 
 function nasErrorMessage(result) {
