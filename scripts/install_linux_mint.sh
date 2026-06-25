@@ -110,7 +110,8 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now "${SERVICE_NAME}"
+sudo systemctl enable "${SERVICE_NAME}"
+sudo systemctl restart "${SERVICE_NAME}"
 
 echo "Checking API health..."
 curl --fail --silent "http://${API_HOST}:${API_PORT}/healthz" >/dev/null
