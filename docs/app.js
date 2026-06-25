@@ -2,6 +2,7 @@ const ORIGIN = "98040";
 const ORIGIN_COORDS = [47.5707, -122.2221];
 const DEFAULT_API_BASE_URL = "http://192.168.1.123:8787";
 const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
+const WEBSITE_SNAPSHOT_CHECKED_AT = "2026-06-09T17:55:00Z";
 const routeCache = new Map();
 
 const parks = {
@@ -485,7 +486,7 @@ async function runSearch({ queryNas = true } = {}) {
       if (nasResult.error) {
         state.coverageStatus = "fallback";
         state.results = await prepareResults(availability);
-        searchNote.textContent = `${nasErrorMessage(nasResult)} Showing the latest saved website snapshot.`;
+        searchNote.textContent = `${nasErrorMessage(nasResult)} ${websiteSnapshotNote()}`;
       } else {
         state.coverageStatus = nasResult.coverageStatus || "checked";
         state.results = await prepareResults(nasResult.results, nasResult.checkedMonths);
@@ -495,10 +496,10 @@ async function runSearch({ queryNas = true } = {}) {
       state.coverageStatus = "fallback";
       state.results = await prepareResults(availability);
       searchNote.textContent = !queryNas
-        ? "Showing the saved website snapshot. Click Search campsites to query the NAS worker."
+        ? `${websiteSnapshotNote()} Click Search campsites to query the NAS worker.`
         : apiBaseUrl
-        ? "NAS worker is unavailable or blocked. Showing the latest saved website snapshot."
-        : "Showing the saved website snapshot.";
+        ? `NAS worker is unavailable or blocked. ${websiteSnapshotNote()}`
+        : websiteSnapshotNote();
     }
 
     if (apiBaseUrl) {
@@ -731,6 +732,10 @@ function nasErrorMessage(result) {
     return "NAS returned an unexpected response.";
   }
   return "NAS refresh could not be started.";
+}
+
+function websiteSnapshotNote() {
+  return `Showing the saved website snapshot from ${formatDateTime(WEBSITE_SNAPSHOT_CHECKED_AT)}.`;
 }
 
 function sleep(ms) {
