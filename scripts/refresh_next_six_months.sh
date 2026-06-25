@@ -2,7 +2,6 @@
 set -euo pipefail
 
 API_URL="${CAMPSITE_WATCH_API_URL:-http://127.0.0.1:8787}"
-ORIGIN="${CAMPSITE_WATCH_ORIGIN:-${API_URL}}"
 ZIP_CODE="${CAMPSITE_WATCH_ZIP:-98040}"
 PEOPLE="${CAMPSITE_WATCH_PEOPLE:-4}"
 DISTANCE_MODE="${CAMPSITE_WATCH_DISTANCE_MODE:-hours}"
@@ -47,7 +46,7 @@ wait_for_refresh() {
   local status_json status message
 
   while [ "${waited}" -lt "${MAX_WAIT_SECONDS}" ]; do
-    status_json="$(curl --fail --silent --show-error -H "Origin: ${ORIGIN}" "${API_URL}/api/refresh-status")"
+    status_json="$(curl --fail --silent --show-error "${API_URL}/api/refresh-status")"
     status="$(json_value "${status_json}" status)"
     message="$(json_value "${status_json}" message)"
 
@@ -81,7 +80,6 @@ for offset in $(seq "${START_OFFSET_MONTHS}" "$((START_OFFSET_MONTHS + MONTH_COU
   refresh_url="${API_URL}/api/refresh?zip=${ZIP_CODE}&people=${PEOPLE}&distanceMode=${DISTANCE_MODE}&distance=${DISTANCE}&month=${month}"
   curl --fail --silent --show-error \
     -X POST \
-    -H "Origin: ${ORIGIN}" \
     "${refresh_url}" >/dev/null
   wait_for_refresh "${month}"
 done

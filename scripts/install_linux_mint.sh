@@ -123,7 +123,6 @@ User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=${ENV_FILE}
 Environment=CAMPSITE_WATCH_API_URL=http://${API_HOST}:${API_PORT}
-Environment=CAMPSITE_WATCH_ORIGIN=http://${API_HOST}:${API_PORT}
 ExecStart=${APP_DIR}/scripts/refresh_next_six_months.sh
 EOF
 
