@@ -369,6 +369,7 @@ const refreshStatusLog = document.querySelector("#refresh-status-log");
 const timingModeInputs = [...document.querySelectorAll("input[name='timingMode']")];
 const timingCards = [...document.querySelectorAll("[data-mode-card]")];
 let lastRefreshLogKey = "";
+let lastPartialResultsKey = "";
 
 populateDateFilters();
 populateDistanceOptions();
@@ -553,6 +554,7 @@ async function triggerRefresh() {
   refreshButton.textContent = "Refreshing...";
   searchNote.textContent = "Asking the NAS to refresh campsite data.";
   clearRefreshLog();
+  lastPartialResultsKey = "";
   updateRefreshStatusPanel({ status: "queued", message: "Starting refresh..." });
 
   const result = await postNasRefresh(apiBaseUrl);
@@ -565,6 +567,7 @@ async function triggerRefresh() {
     } else {
       updateRefreshStatusPanel(result);
       searchNote.textContent = refreshMessage(result);
+      await renderPartialRefreshResults(result);
       await pollRefreshStatus(apiBaseUrl);
       await runSearch();
     }
@@ -703,11 +706,44 @@ async function pollRefreshStatus(apiBaseUrl) {
     const status = await fetchRefreshStatus(apiBaseUrl);
     if (!status || status.error) return;
     updateRefreshStatusPanel(status);
-    searchNote.textContent = refreshMessage(status);
+    const renderedPartialResults = await renderPartialRefreshResults(status);
+    searchNote.textContent = renderedPartialResults
+      ? `Showing matches found so far. ${refreshMessage(status)}`
+      : refreshMessage(status);
     updateRefreshButton(status);
     if (status.status && !["queued", "running", "publishing"].includes(status.status)) return;
   }
   searchNote.textContent = "NAS refresh is still running. Search again in a moment to load the latest snapshot.";
+}
+
+async function renderPartialRefreshResults(status) {
+  if (!Array.isArray(status?.partialResults) || !status.partialResults.length) {
+    return false;
+  }
+
+  const key = partialResultsKey(status.partialResults);
+  if (key === lastPartialResultsKey) {
+    return true;
+  }
+  lastPartialResultsKey = key;
+
+  state.coverageStatus = "partial";
+  const checkedMonths = Array.isArray(status.requestedMonths) ? status.requestedMonths : null;
+  state.results = await prepareResults(status.partialResults, checkedMonths);
+  renderResults(state.results);
+  return true;
+}
+
+function partialResultsKey(items) {
+  return items
+    .map((item) => [
+      item.park || "",
+      item.date || "",
+      item.end || "",
+      item.availableTentSites || 0,
+      Array.isArray(item.sampleSites) ? item.sampleSites.length : 0,
+    ].join(":"))
+    .join("|");
 }
 
 async function appendRefreshDiagnostic(apiBaseUrl) {

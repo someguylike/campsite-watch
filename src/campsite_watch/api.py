@@ -391,6 +391,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 found_count: int,
                 message: str | None = None,
                 phase: str = "running",
+                partial_results: list[dict[str, object]] | None = None,
             ) -> None:
                 if message is None and start is not None and end is not None:
                     message = (
@@ -411,6 +412,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                     details["currentStart"] = start.isoformat()
                 if end is not None:
                     details["currentEnd"] = end.isoformat()
+                if partial_results:
+                    details["partialResults"] = partial_results
                 _write_refresh_status(
                     status_path,
                     "running",
@@ -575,7 +578,11 @@ class ApiHandler(BaseHTTPRequestHandler):
 class GoingToCampCrawler:
     def __init__(
         self,
-        progress_callback: Callable[[int, int, str, date | None, date | None, int, str | None, str], None] | None = None,
+        progress_callback: Callable[
+            [int, int, str, date | None, date | None, int, str | None, str, list[dict[str, object]] | None],
+            None,
+        ]
+        | None = None,
     ) -> None:
         self.resource_cache: dict[int, dict[str, dict[str, object]]] = {}
         self.map_label_cache: dict[int, dict[int, str]] = {}
@@ -599,6 +606,7 @@ class GoingToCampCrawler:
             0,
             f"Refresh running. Prepared {len(parks)} parks and {len(ranges)} weekend range(s) to check.",
             "prepared",
+            results,
         )
         if check_count > MAX_REFRESH_CHECKS:
             raise ValueError(
@@ -619,6 +627,7 @@ class GoingToCampCrawler:
                     len(results),
                     f"Refresh running. Loading campsite resource data for {park_name}.",
                     "resources",
+                    results,
                 )
                 resources = self._resources_for_park(int(park["resourceLocationId"]))
                 map_labels = self._map_labels_for_park(int(park["resourceLocationId"]))
@@ -632,6 +641,7 @@ class GoingToCampCrawler:
                         len(results),
                         f"Refresh running. Checking {park_name} {start:%b} {start.day}-{end.day}. Checked {checked} of {check_count}; found {len(results)} matches so far.",
                         "availability",
+                        results,
                     )
                     checked += 1
                     available_sites = self._available_sites(park, resources, map_labels, start, end, people)
@@ -646,7 +656,7 @@ class GoingToCampCrawler:
                                 "sampleSites": available_sites[:8],
                             }
                         )
-                    self._progress(checked, check_count, park_name, start, end, len(results))
+                    self._progress(checked, check_count, park_name, start, end, len(results), partial_results=results)
             except HTTPError:
                 raise
             except (TimeoutError, URLError, OSError, ValueError, json.JSONDecodeError):
@@ -664,9 +674,10 @@ class GoingToCampCrawler:
         found_count: int,
         message: str | None = None,
         phase: str = "running",
+        partial_results: list[dict[str, object]] | None = None,
     ) -> None:
         if self.progress_callback:
-            self.progress_callback(done, total, park_name, start, end, found_count, message, phase)
+            self.progress_callback(done, total, park_name, start, end, found_count, message, phase, partial_results)
 
     def _parks_for_query(self, query: dict[str, list[str]]) -> list[dict[str, object]]:
         distance_mode = _first(query, "distanceMode", "miles")
@@ -685,6 +696,7 @@ class GoingToCampCrawler:
             0,
             "Refresh running. Loading Washington park metadata from the reservation site.",
             "metadata",
+            None,
         )
         parks_by_id = {}
         for static_park in PARKS:
