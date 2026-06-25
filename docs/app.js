@@ -3,7 +3,9 @@ const ORIGIN_COORDS = [47.5707, -122.2221];
 const DEFAULT_API_BASE_URL = "http://192.168.1.123:8787";
 const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
 const WEBSITE_SNAPSHOT_CHECKED_AT = "2026-06-09T17:55:00Z";
+const PUBLIC_SNAPSHOT_URL = "./latest-results.json";
 const routeCache = new Map();
+let publicSnapshot = null;
 
 const parks = {
   "Blake Island State Park": {
@@ -372,6 +374,8 @@ populateDateFilters();
 populateDistanceOptions();
 updateTimingMode();
 
+loadPublicSnapshot().then(() => runSearch({ queryNas: false }));
+
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await runSearch();
@@ -489,7 +493,8 @@ async function runSearch({ queryNas = true } = {}) {
     } else if (nasResult) {
       if (nasResult.error) {
         state.coverageStatus = "fallback";
-        state.results = await prepareResults(availability);
+        const snapshot = publicSnapshotPayload();
+        state.results = await prepareResults(snapshot.results, snapshot.checkedMonths);
         searchNote.textContent = `${nasErrorMessage(nasResult)} ${websiteSnapshotNote()}`;
       } else {
         state.coverageStatus = nasResult.coverageStatus || "checked";
@@ -498,7 +503,8 @@ async function runSearch({ queryNas = true } = {}) {
       }
     } else {
       state.coverageStatus = "fallback";
-      state.results = await prepareResults(availability);
+      const snapshot = publicSnapshotPayload();
+      state.results = await prepareResults(snapshot.results, snapshot.checkedMonths);
       searchNote.textContent = !queryNas
         ? `${websiteSnapshotNote()} Click Search campsites to query the NAS worker.`
         : apiBaseUrl
@@ -513,6 +519,34 @@ async function runSearch({ queryNas = true } = {}) {
   } finally {
     setSearchBusy(false);
   }
+}
+
+async function loadPublicSnapshot() {
+  try {
+    const response = await fetch(`${PUBLIC_SNAPSHOT_URL}?v=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (payload && Array.isArray(payload.results)) {
+      publicSnapshot = payload;
+    }
+  } catch {
+    publicSnapshot = null;
+  }
+}
+
+function publicSnapshotPayload() {
+  if (publicSnapshot && Array.isArray(publicSnapshot.results)) {
+    return {
+      results: publicSnapshot.results,
+      checkedMonths: Array.isArray(publicSnapshot.checkedMonths) ? publicSnapshot.checkedMonths : null,
+      lastChecked: publicSnapshot.lastChecked || WEBSITE_SNAPSHOT_CHECKED_AT,
+    };
+  }
+  return {
+    results: availability,
+    checkedMonths: null,
+    lastChecked: WEBSITE_SNAPSHOT_CHECKED_AT,
+  };
 }
 
 async function syncStateFromInputs() {
@@ -770,7 +804,7 @@ function nasErrorMessage(result) {
 }
 
 function websiteSnapshotNote() {
-  return `Showing the saved website snapshot from ${formatDateTime(WEBSITE_SNAPSHOT_CHECKED_AT)}.`;
+  return `Showing the saved website snapshot from ${formatDateTime(publicSnapshotPayload().lastChecked)}.`;
 }
 
 function sleep(ms) {

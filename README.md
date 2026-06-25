@@ -122,6 +122,15 @@ The public GitHub Pages snapshot remains useful when you are away from home, but
 
 Search reads the latest saved NAS result without a password. Refreshing live availability also works without a password when no `CAMPSITE_WATCH_API_PASSWORD` is configured. If you want an extra LAN-side guard, set `CAMPSITE_WATCH_API_PASSWORD` in `/etc/campsite-watch.env`, restart the service, and enter that password in the website before refreshing. Do not put the password in the public frontend source.
 
+To publish the latest NAS results as the public GitHub Pages snapshot, configure GitHub push credentials on the NAS and run:
+
+```bash
+cd ~/campsite-watch
+./scripts/publish_public_snapshot.sh
+```
+
+The script copies `/opt/campsite-watch/data/latest-results.json` to `docs/latest-results.json`, commits it, and pushes it. If the snapshot has not changed, it exits without committing.
+
 The API contract is:
 
 ```text
