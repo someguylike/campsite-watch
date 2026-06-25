@@ -34,6 +34,7 @@ async function loadWorkerStatus() {
 
 function renderWorkerStatus(payload) {
   const service = payload.service || {};
+  const refreshService = payload.refreshService || {};
   const timer = payload.refreshTimer || {};
   const refresh = payload.refreshStatus || {};
   const generated = payload.generatedAt ? `Updated ${formatDateTime(payload.generatedAt)}` : "Updated just now";
@@ -41,6 +42,7 @@ function renderWorkerStatus(payload) {
     ${escapeHtml(generated)}
     ${statusBadge("API", service.ActiveState)}
     ${statusBadge("Timer", timer.ActiveState)}
+    ${statusBadge("Last run", refreshService.Result || refreshService.ActiveState)}
     ${statusBadge("Refresh", refresh.status)}
   `;
 
@@ -53,11 +55,14 @@ function renderWorkerStatus(payload) {
   ]);
 
   renderDetails(refreshTimerDetails, [
-    ["State", statusText(timer.ActiveState, timer.SubState)],
-    ["Enabled", timer.UnitFileState || "unknown"],
+    ["Timer state", statusText(timer.ActiveState, timer.SubState)],
+    ["Timer enabled", timer.UnitFileState || "unknown"],
     ["Next run", formatDateTime(timer.NextElapseUSecRealtime)],
     ["Last trigger", formatDateTime(timer.LastTriggerUSec)],
-    ["Result", timer.Result || "n/a"],
+    ["Last run state", statusText(refreshService.ActiveState, refreshService.SubState)],
+    ["Last run result", refreshService.Result || "n/a"],
+    ["Last exit code", refreshService.ExecMainStatus || "n/a"],
+    ["Last run ended", formatDateTime(refreshService.InactiveEnterTimestamp)],
   ]);
 
   renderDetails(currentRefreshDetails, [
@@ -86,7 +91,7 @@ function renderPublicNotice() {
   refreshButton.hidden = true;
   summaryEl.textContent = "Worker status is available only from the LAN-hosted NAS website.";
   renderDetails(apiServiceDetails, [["Status", "Open the local NAS URL to inspect the API service."]]);
-  renderDetails(refreshTimerDetails, [["Status", "Open the local NAS URL to inspect the daily timer."]]);
+  renderDetails(refreshTimerDetails, [["Status", "Open the local NAS URL to inspect the daily timer and last run."]]);
   renderDetails(currentRefreshDetails, [["Status", "Open the local NAS URL to inspect the current refresh."]]);
   snapshotDetails.innerHTML = "";
   timerOutput.textContent = "LAN-only diagnostic output is not available from GitHub Pages.";
