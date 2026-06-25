@@ -92,6 +92,8 @@ def main() -> None:
     parser.add_argument("--browser-profile-dir", default="./browser-profile", type=Path)
     parser.add_argument("--allowed-origin", default="https://someguylike.github.io")
     parser.add_argument("--publish-snapshot-command", default=os.environ.get("CAMPSITE_WATCH_PUBLISH_SNAPSHOT_COMMAND", ""))
+    parser.add_argument("--service-name", default=os.environ.get("CAMPSITE_WATCH_SERVICE_NAME", "campsite-watch-api"))
+    parser.add_argument("--refresh-service-name", default=os.environ.get("CAMPSITE_WATCH_REFRESH_SERVICE_NAME", "campsite-watch-refresh"))
     parser.add_argument(
         "--api-password",
         default="",
@@ -117,6 +119,8 @@ def main() -> None:
             args.docs_dir,
             args.publish_snapshot_command,
             args.browser_profile_dir,
+            args.service_name,
+            args.refresh_service_name,
         )
         return
 

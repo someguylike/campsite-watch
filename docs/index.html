@@ -13,7 +13,7 @@
         <p class="eyebrow">Washington campsite monitor</p>
         <h1>Campsite Watch</h1>
       </div>
-      <a class="secondary-button topbar-link" href="./worker.html">Worker status</a>
+      <a class="secondary-button topbar-link" href="./worker.html" data-lan-only>Worker status</a>
     </header>
 
     <main class="layout">
@@ -115,7 +115,15 @@
               <span id="refresh-status-text">Refresh status</span>
               <span id="refresh-status-meta"></span>
             </div>
-            <div class="refresh-progress" aria-hidden="true">
+            <div
+              id="refresh-progress"
+              class="refresh-progress"
+              role="progressbar"
+              aria-label="Refresh progress"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            >
               <span id="refresh-progress-bar"></span>
             </div>
             <div id="refresh-current-detail" class="refresh-current-detail" hidden></div>

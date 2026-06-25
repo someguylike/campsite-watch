@@ -9,8 +9,13 @@ const refreshLogOutput = document.querySelector("#refresh-log-output");
 const apiLogOutput = document.querySelector("#api-log-output");
 
 refreshButton.addEventListener("click", loadWorkerStatus);
-loadWorkerStatus();
-window.setInterval(loadWorkerStatus, 15000);
+
+if (isPublicPage()) {
+  renderPublicNotice();
+} else {
+  loadWorkerStatus();
+  window.setInterval(loadWorkerStatus, 15000);
+}
 
 async function loadWorkerStatus() {
   refreshButton.disabled = true;
@@ -32,7 +37,12 @@ function renderWorkerStatus(payload) {
   const timer = payload.refreshTimer || {};
   const refresh = payload.refreshStatus || {};
   const generated = payload.generatedAt ? `Updated ${formatDateTime(payload.generatedAt)}` : "Updated just now";
-  summaryEl.textContent = `${generated}. API ${service.ActiveState || "unknown"}; timer ${timer.ActiveState || "unknown"}; refresh ${refresh.status || "unknown"}.`;
+  summaryEl.innerHTML = `
+    ${escapeHtml(generated)}
+    ${statusBadge("API", service.ActiveState)}
+    ${statusBadge("Timer", timer.ActiveState)}
+    ${statusBadge("Refresh", refresh.status)}
+  `;
 
   renderDetails(apiServiceDetails, [
     ["State", statusText(service.ActiveState, service.SubState)],
@@ -72,6 +82,18 @@ function renderWorkerStatus(payload) {
   apiLogOutput.textContent = commandText(payload.apiLogs);
 }
 
+function renderPublicNotice() {
+  refreshButton.hidden = true;
+  summaryEl.textContent = "Worker status is available only from the LAN-hosted NAS website.";
+  renderDetails(apiServiceDetails, [["Status", "Open the local NAS URL to inspect the API service."]]);
+  renderDetails(refreshTimerDetails, [["Status", "Open the local NAS URL to inspect the daily timer."]]);
+  renderDetails(currentRefreshDetails, [["Status", "Open the local NAS URL to inspect the current refresh."]]);
+  snapshotDetails.innerHTML = "";
+  timerOutput.textContent = "LAN-only diagnostic output is not available from GitHub Pages.";
+  refreshLogOutput.textContent = "LAN-only diagnostic output is not available from GitHub Pages.";
+  apiLogOutput.textContent = "LAN-only diagnostic output is not available from GitHub Pages.";
+}
+
 function renderDetails(node, rows) {
   node.innerHTML = rows
     .map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "n/a")}</dd>`)
@@ -105,6 +127,24 @@ function commandText(result) {
 
 function statusText(active, substate) {
   return [active, substate].filter(Boolean).join(" / ") || "unknown";
+}
+
+function statusBadge(label, value) {
+  const status = String(value || "unknown");
+  const tone = statusTone(status);
+  return `<span class="status-badge ${tone}"><span>${escapeHtml(label)}</span>${escapeHtml(status)}</span>`;
+}
+
+function statusTone(status) {
+  if (["active", "running", "queued", "publishing"].includes(status)) return "is-good";
+  if (["complete", "published"].includes(status)) return "is-good";
+  if (["inactive", "unknown", "n/a"].includes(status)) return "is-muted";
+  if (["failed", "error", "blocked", "publish_failed", "profile_expired", "profile_missing"].includes(status)) return "is-bad";
+  return "is-warn";
+}
+
+function isPublicPage() {
+  return window.location.hostname.endsWith("github.io");
 }
 
 function phaseLabel(phase) {

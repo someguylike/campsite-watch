@@ -363,6 +363,7 @@ const refreshButton = document.querySelector("#refresh-button");
 const refreshStatusPanel = document.querySelector("#refresh-status-panel");
 const refreshStatusText = document.querySelector("#refresh-status-text");
 const refreshStatusMeta = document.querySelector("#refresh-status-meta");
+const refreshProgress = document.querySelector("#refresh-progress");
 const refreshProgressBar = document.querySelector("#refresh-progress-bar");
 const refreshCurrentDetail = document.querySelector("#refresh-current-detail");
 const refreshStatusLog = document.querySelector("#refresh-status-log");
@@ -390,6 +391,15 @@ refreshButton.addEventListener("click", async () => {
 distanceMode.addEventListener("change", populateDistanceOptions);
 
 timingModeInputs.forEach((input) => input.addEventListener("change", updateTimingMode));
+timingCards.forEach((card) => {
+  card.addEventListener("click", (event) => {
+    if (event.target.closest("input, select, button, a")) return;
+    setTimingMode(card.dataset.modeCard);
+  });
+  card.querySelectorAll("input, select").forEach((control) => {
+    control.addEventListener("focus", () => setTimingMode(card.dataset.modeCard));
+  });
+});
 
 startDateInput.addEventListener("change", () => {
   setTimingMode("exact");
@@ -556,6 +566,7 @@ async function triggerRefresh() {
   clearRefreshLog();
   lastPartialResultsKey = "";
   updateRefreshStatusPanel({ status: "queued", message: "Starting refresh..." });
+  renderRefreshPlaceholder();
 
   const result = await postNasRefresh(apiBaseUrl);
   if (result?.error === "unauthorized") {
@@ -734,6 +745,15 @@ async function renderPartialRefreshResults(status) {
   return true;
 }
 
+function renderRefreshPlaceholder() {
+  resultsEl.innerHTML = `
+    <article class="result-card refresh-placeholder">
+      <h2>Checking live availability</h2>
+      <p class="meta">Matches found during this refresh will appear here as the NAS checks each park.</p>
+    </article>
+  `;
+}
+
 function partialResultsKey(items) {
   return items
     .map((item) => [
@@ -800,6 +820,9 @@ function updateRefreshStatusPanel(status) {
     ? 100
     : 8;
   refreshProgressBar.style.width = `${percent}%`;
+  if (refreshProgress) {
+    refreshProgress.setAttribute("aria-valuenow", String(percent));
+  }
 }
 
 function clearRefreshLog() {
@@ -1139,6 +1162,9 @@ function isPublicPage() {
 }
 
 function configureAccessMode() {
+  document.querySelectorAll("[data-lan-only]").forEach((node) => {
+    node.hidden = !canUseNasApi();
+  });
   if (canUseNasApi()) return;
   refreshButton.hidden = true;
 }
@@ -1160,9 +1186,7 @@ function updateTimingMode() {
   timingCards.forEach((card) => {
     const active = card.dataset.modeCard === mode;
     card.classList.toggle("is-active", active);
-    card.querySelectorAll("input, select").forEach((control) => {
-      control.disabled = !active;
-    });
+    card.setAttribute("aria-current", active ? "true" : "false");
   });
 }
 
@@ -1237,8 +1261,16 @@ function stayLabel(item) {
 }
 
 function renderResults(items) {
+  const partialBanner = state.coverageStatus === "partial"
+    ? `
+      <section class="refresh-results-banner" role="status">
+        <strong>Live refresh in progress</strong>
+        <span>Showing matches found so far. More parks may appear as checks finish.</span>
+      </section>
+    `
+    : "";
   if (!items.length) {
-    resultsEl.innerHTML = `<article class="result-card"><h2>No available campsites found</h2><p class="meta">${escapeHtml(noResultsMessage())}</p></article>`;
+    resultsEl.innerHTML = `${partialBanner}<article class="result-card"><h2>No available campsites found</h2><p class="meta">${escapeHtml(noResultsMessage())}</p></article>`;
     return;
   }
 
@@ -1279,7 +1311,7 @@ function renderResults(items) {
     .join("")
     : `<article class="result-card"><h2>No ${escapeHtml(directionName(state.directionFilter))} results</h2><p class="meta">Choose another direction or clear the direction filter.</p></article>`;
 
-  resultsEl.innerHTML = `${renderProximitySummary(items)}${body}`;
+  resultsEl.innerHTML = `${partialBanner}${renderProximitySummary(items)}${body}`;
   bindProximityControls();
 }
 

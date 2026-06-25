@@ -1522,6 +1522,8 @@ def serve_api(
     docs_dir: Path = Path("./docs"),
     publish_snapshot_command: str = "",
     browser_profile_dir: Path = Path("./browser-profile"),
+    service_name: str = "campsite-watch-api",
+    refresh_service_name: str = "campsite-watch-refresh",
 ) -> None:
     handler = type(
         "ConfiguredApiHandler",
@@ -1533,6 +1535,8 @@ def serve_api(
             "allowed_origin": allowed_origin,
             "api_token": api_token,
             "publish_snapshot_command": publish_snapshot_command,
+            "service_name": service_name,
+            "refresh_service_name": refresh_service_name,
         },
     )
     server = ThreadingHTTPServer((host, port), handler)
@@ -1549,6 +1553,8 @@ def main() -> None:
     parser.add_argument("--browser-profile-dir", default="./browser-profile", type=Path)
     parser.add_argument("--allowed-origin", default="https://someguylike.github.io")
     parser.add_argument("--publish-snapshot-command", default=os.environ.get("CAMPSITE_WATCH_PUBLISH_SNAPSHOT_COMMAND", ""))
+    parser.add_argument("--service-name", default=os.environ.get("CAMPSITE_WATCH_SERVICE_NAME", "campsite-watch-api"))
+    parser.add_argument("--refresh-service-name", default=os.environ.get("CAMPSITE_WATCH_REFRESH_SERVICE_NAME", "campsite-watch-refresh"))
     parser.add_argument(
         "--api-password",
         default="",
@@ -1565,6 +1571,8 @@ def main() -> None:
         args.docs_dir,
         args.publish_snapshot_command,
         args.browser_profile_dir,
+        args.service_name,
+        args.refresh_service_name,
     )
 
 

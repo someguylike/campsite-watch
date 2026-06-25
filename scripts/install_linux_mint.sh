@@ -102,7 +102,7 @@ Type=simple
 User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=${ENV_FILE}
-ExecStart=${APP_DIR}/.venv/bin/campsite-watch --serve-api --api-host ${API_HOST} --api-port ${API_PORT} --results-json ${APP_DIR}/data/latest-results.json --docs-dir ${APP_DIR}/docs --browser-profile-dir ${APP_DIR}/browser-profile --allowed-origin ${ALLOWED_ORIGIN}
+ExecStart=${APP_DIR}/.venv/bin/campsite-watch --serve-api --api-host ${API_HOST} --api-port ${API_PORT} --results-json ${APP_DIR}/data/latest-results.json --docs-dir ${APP_DIR}/docs --browser-profile-dir ${APP_DIR}/browser-profile --allowed-origin ${ALLOWED_ORIGIN} --service-name ${SERVICE_NAME} --refresh-service-name ${REFRESH_SERVICE_NAME}
 Restart=on-failure
 RestartSec=5
 
@@ -123,6 +123,7 @@ User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=${ENV_FILE}
 Environment=CAMPSITE_WATCH_API_URL=http://${API_HOST}:${API_PORT}
+Environment=CAMPSITE_WATCH_ORIGIN=http://${API_HOST}:${API_PORT}
 ExecStart=${APP_DIR}/scripts/refresh_next_six_months.sh
 EOF
 

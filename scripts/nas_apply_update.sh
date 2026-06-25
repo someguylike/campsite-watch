@@ -19,7 +19,7 @@ echo "Updating checkout at ${REPO_DIR}..."
 git pull --ff-only
 
 echo "Installing and restarting ${SERVICE_NAME}..."
-API_HOST="${API_HOST}" API_PORT="${API_PORT}" APP_DIR="${APP_DIR}" SERVICE_NAME="${SERVICE_NAME}" ./scripts/install_linux_mint.sh
+API_HOST="${API_HOST}" API_PORT="${API_PORT}" APP_DIR="${APP_DIR}" SERVICE_NAME="${SERVICE_NAME}" REFRESH_SERVICE_NAME="${REFRESH_SERVICE_NAME}" ./scripts/install_linux_mint.sh
 
 echo
 echo "Verifying deployed website copy..."
