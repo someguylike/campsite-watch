@@ -390,6 +390,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 end: date | None,
                 found_count: int,
                 message: str | None = None,
+                phase: str = "running",
             ) -> None:
                 if message is None and start is not None and end is not None:
                     message = (
@@ -398,12 +399,24 @@ class ApiHandler(BaseHTTPRequestHandler):
                     )
                 elif message is None:
                     message = f"Refresh running. Checked {done} of {total} park/weekend combinations. Found {found_count} matches so far."
+                details: dict[str, object] = {
+                    "checked": done,
+                    "total": total,
+                    "found": found_count,
+                    "phase": phase,
+                }
+                if park_name:
+                    details["currentPark"] = park_name
+                if start is not None:
+                    details["currentStart"] = start.isoformat()
+                if end is not None:
+                    details["currentEnd"] = end.isoformat()
                 _write_refresh_status(
                     status_path,
                     "running",
                     message,
                     requested_months,
-                    {"checked": done, "total": total, "found": found_count},
+                    details,
                 )
 
             crawler = GoingToCampCrawler(progress_callback=progress)
@@ -562,7 +575,7 @@ class ApiHandler(BaseHTTPRequestHandler):
 class GoingToCampCrawler:
     def __init__(
         self,
-        progress_callback: Callable[[int, int, str, date | None, date | None, int, str | None], None] | None = None,
+        progress_callback: Callable[[int, int, str, date | None, date | None, int, str | None, str], None] | None = None,
     ) -> None:
         self.resource_cache: dict[int, dict[str, dict[str, object]]] = {}
         self.map_label_cache: dict[int, dict[int, str]] = {}
@@ -585,6 +598,7 @@ class GoingToCampCrawler:
             None,
             0,
             f"Refresh running. Prepared {len(parks)} parks and {len(ranges)} weekend range(s) to check.",
+            "prepared",
         )
         if check_count > MAX_REFRESH_CHECKS:
             raise ValueError(
@@ -604,6 +618,7 @@ class GoingToCampCrawler:
                     None,
                     len(results),
                     f"Refresh running. Loading campsite resource data for {park_name}.",
+                    "resources",
                 )
                 resources = self._resources_for_park(int(park["resourceLocationId"]))
                 map_labels = self._map_labels_for_park(int(park["resourceLocationId"]))
@@ -616,6 +631,7 @@ class GoingToCampCrawler:
                         end,
                         len(results),
                         f"Refresh running. Checking {park_name} {start:%b} {start.day}-{end.day}. Checked {checked} of {check_count}; found {len(results)} matches so far.",
+                        "availability",
                     )
                     checked += 1
                     available_sites = self._available_sites(park, resources, map_labels, start, end, people)
@@ -647,9 +663,10 @@ class GoingToCampCrawler:
         end: date | None,
         found_count: int,
         message: str | None = None,
+        phase: str = "running",
     ) -> None:
         if self.progress_callback:
-            self.progress_callback(done, total, park_name, start, end, found_count, message)
+            self.progress_callback(done, total, park_name, start, end, found_count, message, phase)
 
     def _parks_for_query(self, query: dict[str, list[str]]) -> list[dict[str, object]]:
         distance_mode = _first(query, "distanceMode", "miles")
@@ -667,6 +684,7 @@ class GoingToCampCrawler:
             None,
             0,
             "Refresh running. Loading Washington park metadata from the reservation site.",
+            "metadata",
         )
         parks_by_id = {}
         for static_park in PARKS:

@@ -364,6 +364,7 @@ const refreshStatusPanel = document.querySelector("#refresh-status-panel");
 const refreshStatusText = document.querySelector("#refresh-status-text");
 const refreshStatusMeta = document.querySelector("#refresh-status-meta");
 const refreshProgressBar = document.querySelector("#refresh-progress-bar");
+const refreshCurrentDetail = document.querySelector("#refresh-current-detail");
 const refreshStatusLog = document.querySelector("#refresh-status-log");
 const timingModeInputs = [...document.querySelectorAll("input[name='timingMode']")];
 const timingCards = [...document.querySelectorAll("[data-mode-card]")];
@@ -741,6 +742,7 @@ function updateRefreshStatusPanel(status) {
   refreshStatusPanel.hidden = false;
   refreshStatusText.textContent = refreshMessage(status);
   refreshStatusMeta.textContent = status.updatedAt ? `Updated ${formatDateTime(status.updatedAt)}` : "";
+  updateRefreshCurrentDetail(status);
   appendRefreshLog(status);
 
   const total = Number(status.total || 0);
@@ -766,9 +768,43 @@ function updateRefreshStatusPanel(status) {
 
 function clearRefreshLog() {
   lastRefreshLogKey = "";
+  if (refreshCurrentDetail) {
+    refreshCurrentDetail.hidden = true;
+    refreshCurrentDetail.textContent = "";
+  }
   if (refreshStatusLog) {
     refreshStatusLog.replaceChildren();
   }
+}
+
+function updateRefreshCurrentDetail(status) {
+  if (!refreshCurrentDetail) return;
+  const detail = refreshCurrentText(status);
+  refreshCurrentDetail.hidden = !detail;
+  refreshCurrentDetail.textContent = detail;
+}
+
+function refreshCurrentText(status) {
+  if (!status || status.status !== "running") return "";
+  const park = status.currentPark && status.currentPark !== "park list" && status.currentPark !== "park metadata"
+    ? String(status.currentPark)
+    : "";
+  const phase = status.phase ? phaseLabel(status.phase) : "Working";
+  const dateRange = status.currentStart || status.currentEnd
+    ? `${formatDate(status.currentStart || status.currentEnd)}-${formatDate(status.currentEnd || status.currentStart)}`
+    : "";
+  const parts = [phase, park, dateRange].filter(Boolean);
+  return parts.length ? `Current: ${parts.join(" · ")}` : "";
+}
+
+function phaseLabel(phase) {
+  return {
+    metadata: "Loading park metadata",
+    prepared: "Prepared checks",
+    resources: "Loading campsite resources",
+    availability: "Checking availability",
+    running: "Working",
+  }[phase] || "Working";
 }
 
 function appendRefreshLog(status) {
@@ -780,6 +816,10 @@ function appendRefreshLog(status) {
     status.checked ?? "",
     status.total ?? "",
     status.found ?? "",
+    status.phase ?? "",
+    status.currentPark ?? "",
+    status.currentStart ?? "",
+    status.currentEnd ?? "",
   ].join("|");
   if (key === lastRefreshLogKey) return;
   lastRefreshLogKey = key;

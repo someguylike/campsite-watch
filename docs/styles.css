@@ -423,6 +423,17 @@ button:disabled {
   transition: width 160ms ease;
 }
 
+.refresh-current-detail {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--accent-strong);
+  font-size: 0.84rem;
+  font-weight: 720;
+  line-height: 1.35;
+  padding: 8px;
+}
+
 .refresh-status-log {
   display: grid;
   gap: 6px;
