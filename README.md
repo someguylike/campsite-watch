@@ -171,10 +171,13 @@ If live checks are blocked, return `source: "fallback"` with the latest saved re
 
 The refresh endpoint is frontend-triggerable, but it still obeys the reservation site's bot protection. If the NAS receives an Azure WAF/captcha response, refresh status becomes `blocked` and the saved results are left unchanged.
 
-To refresh the rolling campsite cache automatically from the NAS, install `scripts/refresh_next_six_months.sh` in cron. The script triggers one month at a time, waits for each month to finish, and defaults to the next 6 calendar months, 4 people, and a 5-hour drive from `98040`:
+The Linux Mint installer creates a daily `campsite-watch-refresh.timer` systemd timer. It runs `scripts/refresh_next_six_months.sh`, which triggers one month at a time, waits for each month to finish, and defaults to the next 6 calendar months, 4 people, and a 5-hour drive from `98040`.
 
-```cron
-17 */12 * * * /home/nampham/campsite-watch/scripts/refresh_next_six_months.sh >> /home/nampham/campsite-watch/data/refresh-cron.log 2>&1
+Check the timer on the NAS with:
+
+```bash
+sudo systemctl list-timers campsite-watch-refresh.timer
+sudo journalctl -u campsite-watch-refresh.service -n 100
 ```
 
 ## Configuration Notes

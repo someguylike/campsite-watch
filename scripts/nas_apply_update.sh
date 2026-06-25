@@ -6,6 +6,7 @@ API_HOST="${API_HOST:-192.168.1.123}"
 API_PORT="${API_PORT:-8787}"
 APP_DIR="${APP_DIR:-/opt/campsite-watch}"
 SERVICE_NAME="${SERVICE_NAME:-campsite-watch-api}"
+REFRESH_SERVICE_NAME="${REFRESH_SERVICE_NAME:-campsite-watch-refresh}"
 
 cd "${REPO_DIR}"
 
@@ -29,6 +30,11 @@ fi
 
 echo "Checking service status..."
 sudo systemctl --no-pager --lines=20 status "${SERVICE_NAME}" || true
+
+echo
+echo "Checking daily refresh timer..."
+sudo systemctl --no-pager --lines=20 status "${REFRESH_SERVICE_NAME}.timer" || true
+sudo systemctl list-timers "${REFRESH_SERVICE_NAME}.timer" || true
 
 echo
 echo "Checking API health..."

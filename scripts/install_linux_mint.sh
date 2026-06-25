@@ -9,6 +9,7 @@ API_PORT="${API_PORT:-8787}"
 ALLOWED_ORIGIN="${ALLOWED_ORIGIN:-http://${API_HOST}:${API_PORT}}"
 ENV_FILE="${ENV_FILE:-/etc/campsite-watch.env}"
 SERVICE_NAME="${SERVICE_NAME:-campsite-watch-api}"
+REFRESH_SERVICE_NAME="${REFRESH_SERVICE_NAME:-campsite-watch-refresh}"
 
 if ! command -v sudo >/dev/null 2>&1; then
   echo "sudo is required." >&2
@@ -109,9 +110,39 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
+echo "Writing daily refresh timer..."
+sudo tee "/etc/systemd/system/${REFRESH_SERVICE_NAME}.service" >/dev/null <<EOF
+[Unit]
+Description=Campsite Watch rolling refresh
+After=${SERVICE_NAME}.service
+Wants=${SERVICE_NAME}.service
+
+[Service]
+Type=oneshot
+User=${APP_USER}
+WorkingDirectory=${APP_DIR}
+EnvironmentFile=${ENV_FILE}
+Environment=CAMPSITE_WATCH_API_URL=http://${API_HOST}:${API_PORT}
+ExecStart=${APP_DIR}/scripts/refresh_next_six_months.sh
+EOF
+
+sudo tee "/etc/systemd/system/${REFRESH_SERVICE_NAME}.timer" >/dev/null <<EOF
+[Unit]
+Description=Refresh Campsite Watch results daily
+
+[Timer]
+OnCalendar=*-*-* 04:17:00
+Persistent=true
+RandomizedDelaySec=20m
+
+[Install]
+WantedBy=timers.target
+EOF
+
 sudo systemctl daemon-reload
 sudo systemctl enable "${SERVICE_NAME}"
 sudo systemctl restart "${SERVICE_NAME}"
+sudo systemctl enable --now "${REFRESH_SERVICE_NAME}.timer"
 
 echo "Checking API health..."
 curl --fail --silent "http://${API_HOST}:${API_PORT}/healthz" >/dev/null
@@ -133,6 +164,8 @@ Configure GitHub deploy-key push access for ${APP_USER} so public snapshot publi
 Service commands:
   sudo systemctl status ${SERVICE_NAME}
   sudo journalctl -u ${SERVICE_NAME} -f
+  sudo systemctl list-timers ${REFRESH_SERVICE_NAME}.timer
+  sudo journalctl -u ${REFRESH_SERVICE_NAME}.service -f
 
 Next step:
   Edit ${APP_DIR}/config.toml for real campsite watches, then initialize the browser profile:
