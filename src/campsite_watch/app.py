@@ -89,11 +89,13 @@ def main() -> None:
     parser.add_argument("--api-port", default=8787, type=int)
     parser.add_argument("--results-json", default="./data/latest-results.json", type=Path)
     parser.add_argument("--docs-dir", default="./docs", type=Path)
+    parser.add_argument("--browser-profile-dir", default="./browser-profile", type=Path)
     parser.add_argument("--allowed-origin", default="https://someguylike.github.io")
+    parser.add_argument("--publish-snapshot-command", default=os.environ.get("CAMPSITE_WATCH_PUBLISH_SNAPSHOT_COMMAND", ""))
     parser.add_argument(
         "--api-password",
-        default=os.environ.get("CAMPSITE_WATCH_API_PASSWORD", os.environ.get("CAMPSITE_WATCH_API_TOKEN", "")),
-        help="shared password required before the website can trigger live refreshes",
+        default="",
+        help="deprecated; LAN refresh no longer checks a website password",
     )
     parser.add_argument("--api-token", default="", help=argparse.SUPPRESS)
     parser.add_argument("--log-level", default="INFO")
@@ -111,8 +113,10 @@ def main() -> None:
             args.api_port,
             args.results_json,
             args.allowed_origin,
-            args.api_password or args.api_token,
+            "",
             args.docs_dir,
+            args.publish_snapshot_command,
+            args.browser_profile_dir,
         )
         return
 

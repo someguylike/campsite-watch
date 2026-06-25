@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 from secrets import compare_digest
+import subprocess
 import threading
 import time
 from typing import Callable
@@ -154,8 +155,10 @@ PARKS = [
 class ApiHandler(BaseHTTPRequestHandler):
     results_path = Path("./data/latest-results.json")
     docs_dir = Path("./docs")
+    browser_profile_dir = Path("./browser-profile")
     allowed_origin = "https://someguylike.github.io"
     api_token = ""
+    publish_snapshot_command = ""
     refresh_lock = threading.Lock()
     auth_failures: dict[str, list[float]] = {}
 
@@ -215,29 +218,6 @@ class ApiHandler(BaseHTTPRequestHandler):
         if parsed_url.path != "/api/refresh":
             self._send_json(404, {"error": "not_found"})
             return
-
-        if self.api_token:
-            if self._auth_rate_limited():
-                _write_refresh_status(
-                    _refresh_status_path(self.results_path),
-                    "auth_rate_limited",
-                    f"Too many failed refresh password attempts from {self._auth_client_key()}.",
-                    _requested_months(parse_qs(parsed_url.query)),
-                )
-                self._send_json(429, {"error": "rate_limited", "detail": "Too many failed refresh password attempts."})
-                return
-
-            if not self._authorized():
-                self._record_auth_failure()
-                _write_refresh_status(
-                    _refresh_status_path(self.results_path),
-                    "auth_failed",
-                    f"Refresh password failed from {self._auth_client_key()}.",
-                    _requested_months(parse_qs(parsed_url.query)),
-                )
-                self._send_json(401, {"error": "unauthorized"})
-                return
-            self._record_auth_success()
 
         query = parse_qs(parsed_url.query)
         validation_error = _validate_refresh_query(query)
@@ -397,6 +377,11 @@ class ApiHandler(BaseHTTPRequestHandler):
             requested_months,
         )
         try:
+            profile_problem = self._browser_profile_problem()
+            if profile_problem:
+                _write_refresh_status(status_path, "profile_missing", profile_problem, requested_months)
+                return
+
             def progress(done: int, total: int, park_name: str, start: date, end: date, found_count: int) -> None:
                 _write_refresh_status(
                     status_path,
@@ -432,8 +417,19 @@ class ApiHandler(BaseHTTPRequestHandler):
                 ),
                 requested_months,
             )
+            self._publish_snapshot(status_path, requested_months)
         except HTTPError as error:
-            if error.code in {401, 403, 429}:
+            if error.code in {401, 403}:
+                _write_refresh_status(
+                    status_path,
+                    "profile_expired",
+                    (
+                        f"Reservation site blocked the NAS refresh with HTTP {error.code}. "
+                        "The NAS browser profile may be expired; rerun scripts/setup_browser_profile_from_mac.sh from your Mac."
+                    ),
+                    requested_months,
+                )
+            elif error.code == 429:
                 _write_refresh_status(
                     status_path,
                     "blocked",
@@ -451,6 +447,27 @@ class ApiHandler(BaseHTTPRequestHandler):
             return
         finally:
             self.refresh_lock.release()
+
+    def _browser_profile_problem(self) -> str:
+        profile_dir = self.browser_profile_dir
+        if not profile_dir.exists():
+            return (
+                f"NAS browser profile is missing at {profile_dir}. "
+                "Run scripts/setup_browser_profile_from_mac.sh from your Mac, then retry refresh."
+            )
+        try:
+            has_profile_files = any(profile_dir.iterdir())
+        except OSError:
+            return (
+                f"NAS browser profile at {profile_dir} could not be read. "
+                "Check permissions or rerun scripts/setup_browser_profile_from_mac.sh from your Mac."
+            )
+        if not has_profile_files:
+            return (
+                f"NAS browser profile is empty at {profile_dir}. "
+                "Run scripts/setup_browser_profile_from_mac.sh from your Mac, then retry refresh."
+            )
+        return ""
 
     def _merged_refresh_payload(
         self,
@@ -485,6 +502,49 @@ class ApiHandler(BaseHTTPRequestHandler):
         except (OSError, json.JSONDecodeError):
             return {}
         return payload if isinstance(payload, dict) else {}
+
+    def _publish_snapshot(self, status_path: Path, requested_months: list[str]) -> None:
+        if not self.publish_snapshot_command:
+            return
+
+        _write_refresh_status(
+            status_path,
+            "publishing",
+            "Refresh complete. Publishing public GitHub Pages snapshot.",
+            requested_months,
+        )
+        try:
+            completed = subprocess.run(
+                self.publish_snapshot_command,
+                shell=True,
+                check=False,
+                cwd=str(self.results_path.parent.parent),
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            _write_refresh_status(
+                status_path,
+                "publish_failed",
+                "Refresh complete, but publishing the public snapshot failed before git push finished.",
+                requested_months,
+            )
+            return
+
+        if completed.returncode == 0:
+            detail = (completed.stdout or "").strip().splitlines()
+            message = detail[-1] if detail else "Public snapshot published."
+            _write_refresh_status(status_path, "published", f"Refresh complete. {message}", requested_months)
+        else:
+            detail = (completed.stderr or completed.stdout or "").strip().splitlines()
+            message = detail[-1] if detail else "Publish command failed."
+            _write_refresh_status(
+                status_path,
+                "publish_failed",
+                f"Refresh complete, but publishing the public snapshot failed: {message}",
+                requested_months,
+            )
 
 
 class GoingToCampCrawler:
@@ -1282,6 +1342,8 @@ def serve_api(
     allowed_origin: str,
     api_token: str = "",
     docs_dir: Path = Path("./docs"),
+    publish_snapshot_command: str = "",
+    browser_profile_dir: Path = Path("./browser-profile"),
 ) -> None:
     handler = type(
         "ConfiguredApiHandler",
@@ -1289,8 +1351,10 @@ def serve_api(
         {
             "results_path": results_path,
             "docs_dir": docs_dir,
+            "browser_profile_dir": browser_profile_dir,
             "allowed_origin": allowed_origin,
             "api_token": api_token,
+            "publish_snapshot_command": publish_snapshot_command,
         },
     )
     server = ThreadingHTTPServer((host, port), handler)
@@ -1304,15 +1368,26 @@ def main() -> None:
     parser.add_argument("--port", default=8787, type=int)
     parser.add_argument("--results", default="./data/latest-results.json", type=Path)
     parser.add_argument("--docs-dir", default="./docs", type=Path)
+    parser.add_argument("--browser-profile-dir", default="./browser-profile", type=Path)
     parser.add_argument("--allowed-origin", default="https://someguylike.github.io")
+    parser.add_argument("--publish-snapshot-command", default=os.environ.get("CAMPSITE_WATCH_PUBLISH_SNAPSHOT_COMMAND", ""))
     parser.add_argument(
         "--api-password",
-        default=os.environ.get("CAMPSITE_WATCH_API_PASSWORD", os.environ.get("CAMPSITE_WATCH_API_TOKEN", "")),
-        help="shared password required before the website can trigger live refreshes",
+        default="",
+        help="deprecated; LAN refresh no longer checks a website password",
     )
     parser.add_argument("--api-token", default="")
     args = parser.parse_args()
-    serve_api(args.host, args.port, args.results, args.allowed_origin, args.api_password or args.api_token, args.docs_dir)
+    serve_api(
+        args.host,
+        args.port,
+        args.results,
+        args.allowed_origin,
+        "",
+        args.docs_dir,
+        args.publish_snapshot_command,
+        args.browser_profile_dir,
+    )
 
 
 if __name__ == "__main__":

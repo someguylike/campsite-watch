@@ -2,7 +2,6 @@
 set -euo pipefail
 
 API_URL="${CAMPSITE_WATCH_API_URL:-http://127.0.0.1:8787}"
-API_PASSWORD="${CAMPSITE_WATCH_API_PASSWORD:-${CAMPSITE_WATCH_API_TOKEN:-}}"
 ORIGIN="${CAMPSITE_WATCH_ORIGIN:-https://someguylike.github.io}"
 ZIP_CODE="${CAMPSITE_WATCH_ZIP:-98040}"
 PEOPLE="${CAMPSITE_WATCH_PEOPLE:-4}"
@@ -12,11 +11,6 @@ MONTH_COUNT="${CAMPSITE_WATCH_MONTH_COUNT:-6}"
 START_OFFSET_MONTHS="${CAMPSITE_WATCH_START_OFFSET_MONTHS:-1}"
 POLL_SECONDS="${CAMPSITE_WATCH_POLL_SECONDS:-15}"
 MAX_WAIT_SECONDS="${CAMPSITE_WATCH_MAX_WAIT_SECONDS:-1800}"
-
-if [ -z "${API_PASSWORD}" ]; then
-  echo "CAMPSITE_WATCH_API_PASSWORD must be set." >&2
-  exit 1
-fi
 
 month_at_offset() {
   python3 - "$1" <<'PY'
@@ -58,15 +52,15 @@ wait_for_refresh() {
     message="$(json_value "${status_json}" message)"
 
     case "${status}" in
-      complete)
+      complete|published)
         echo "${month}: ${message}"
         return 0
         ;;
-      blocked|error)
+      blocked|error|publish_failed|profile_expired|profile_missing)
         echo "${month}: refresh ${status}: ${message}" >&2
         return 1
         ;;
-      queued|running|"")
+      queued|running|publishing|"")
         sleep "${POLL_SECONDS}"
         waited=$((waited + POLL_SECONDS))
         ;;
@@ -88,7 +82,6 @@ for offset in $(seq "${START_OFFSET_MONTHS}" "$((START_OFFSET_MONTHS + MONTH_COU
   curl --fail --silent --show-error \
     -X POST \
     -H "Origin: ${ORIGIN}" \
-    -H "Authorization: Bearer ${API_PASSWORD}" \
     "${refresh_url}" >/dev/null
   wait_for_refresh "${month}"
 done

@@ -108,14 +108,8 @@
             <button id="search-button" type="submit">Search campsites</button>
             <button id="refresh-button" class="secondary-button" type="button">Refresh availability</button>
           </div>
-          <div id="refresh-auth" class="refresh-auth" hidden>
-            <label class="field">
-              <span>Refresh password</span>
-              <input id="nas-password-input" type="password" autocomplete="current-password" />
-            </label>
-          </div>
           <p id="search-note" class="field-help">
-            Search reads the latest saved NAS results. Refresh asks the NAS to check live availability and requires the password.
+            Search reads the latest saved snapshot. Open the LAN site to refresh live availability from the NAS.
           </p>
           <div id="refresh-status-panel" class="refresh-status-panel" hidden>
             <div class="refresh-status-row">
@@ -132,6 +126,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=public-snapshot-json-20260625"></script>
+    <script src="./app.js?v=public-snapshot-lan-refresh-20260625"></script>
   </body>
 </html>

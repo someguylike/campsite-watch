@@ -381,13 +381,6 @@ button:disabled {
   gap: 8px;
 }
 
-.refresh-auth {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  padding: 10px;
-}
-
 .refresh-status-panel {
   display: grid;
   gap: 8px;

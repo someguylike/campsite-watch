@@ -81,8 +81,12 @@ if [ ! -f "${APP_DIR}/data/latest-results.json" ]; then
 fi
 
 if [ ! -f "${ENV_FILE}" ]; then
-  printf 'CAMPSITE_WATCH_API_PASSWORD=\n' | sudo tee "${ENV_FILE}" >/dev/null
+  sudo touch "${ENV_FILE}"
   sudo chmod 600 "${ENV_FILE}"
+fi
+
+if ! sudo grep -q '^CAMPSITE_WATCH_PUBLISH_SNAPSHOT_COMMAND=' "${ENV_FILE}"; then
+  printf 'CAMPSITE_WATCH_PUBLISH_SNAPSHOT_COMMAND=%s/scripts/publish_public_snapshot.sh\n' "${APP_DIR}" | sudo tee -a "${ENV_FILE}" >/dev/null
 fi
 
 echo "Writing systemd service..."
@@ -97,7 +101,7 @@ Type=simple
 User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=${ENV_FILE}
-ExecStart=${APP_DIR}/.venv/bin/campsite-watch --serve-api --api-host ${API_HOST} --api-port ${API_PORT} --results-json ${APP_DIR}/data/latest-results.json --docs-dir ${APP_DIR}/docs --allowed-origin ${ALLOWED_ORIGIN}
+ExecStart=${APP_DIR}/.venv/bin/campsite-watch --serve-api --api-host ${API_HOST} --api-port ${API_PORT} --results-json ${APP_DIR}/data/latest-results.json --docs-dir ${APP_DIR}/docs --browser-profile-dir ${APP_DIR}/browser-profile --allowed-origin ${ALLOWED_ORIGIN}
 Restart=on-failure
 RestartSec=5
 
@@ -118,8 +122,12 @@ Install complete.
 Open the LAN-only website while connected to the same network as the NAS:
   URL:      http://${API_HOST}:${API_PORT}/
 
-Refresh does not require a password when this service is LAN-only. To require one anyway,
-set CAMPSITE_WATCH_API_PASSWORD in ${ENV_FILE} and restart ${SERVICE_NAME}.
+Refresh does not require a password because this service is intended to stay LAN-only.
+
+After refresh completes, the service automatically runs:
+  ${APP_DIR}/scripts/publish_public_snapshot.sh
+
+Configure GitHub deploy-key push access for ${APP_USER} so public snapshot publishing can succeed.
 
 Service commands:
   sudo systemctl status ${SERVICE_NAME}

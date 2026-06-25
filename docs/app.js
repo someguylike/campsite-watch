@@ -1,7 +1,6 @@
 const ORIGIN = "98040";
 const ORIGIN_COORDS = [47.5707, -122.2221];
 const DEFAULT_API_BASE_URL = "http://192.168.1.123:8787";
-const API_BASE_STORAGE_KEY = "campsite-watch.apiBaseUrl";
 const WEBSITE_SNAPSHOT_CHECKED_AT = "2026-06-09T17:55:00Z";
 const PUBLIC_SNAPSHOT_URL = "./latest-results.json";
 const routeCache = new Map();
@@ -361,8 +360,6 @@ const monthFilter = document.querySelector("#month-filter");
 const searchNote = document.querySelector("#search-note");
 const searchButton = document.querySelector("#search-button");
 const refreshButton = document.querySelector("#refresh-button");
-const refreshAuth = document.querySelector("#refresh-auth");
-const nasPasswordInput = document.querySelector("#nas-password-input");
 const refreshStatusPanel = document.querySelector("#refresh-status-panel");
 const refreshStatusText = document.querySelector("#refresh-status-text");
 const refreshStatusMeta = document.querySelector("#refresh-status-meta");
@@ -373,8 +370,9 @@ const timingCards = [...document.querySelectorAll("[data-mode-card]")];
 populateDateFilters();
 populateDistanceOptions();
 updateTimingMode();
+configureAccessMode();
 
-loadPublicSnapshot().then(() => runSearch({ queryNas: false }));
+loadPublicSnapshot().then(() => runSearch({ queryNas: canUseNasApi() }));
 
 searchForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -382,12 +380,6 @@ searchForm.addEventListener("submit", async (event) => {
 });
 
 refreshButton.addEventListener("click", async () => {
-  await triggerRefresh();
-});
-
-nasPasswordInput.addEventListener("keydown", async (event) => {
-  if (event.key !== "Enter") return;
-  event.preventDefault();
   await triggerRefresh();
 });
 
@@ -456,40 +448,21 @@ document.querySelector("#location-button").addEventListener("click", () => {
   );
 });
 
-document.querySelector("#sync-button")?.addEventListener("click", () => {
-  const current = apiBase();
-  const next = window.prompt("Private LAN NAS URL", current || DEFAULT_API_BASE_URL);
-  if (next === null) return;
-
-  const trimmed = next.trim().replace(/\/+$/, "");
-  if (trimmed) {
-    window.localStorage.setItem(API_BASE_STORAGE_KEY, trimmed);
-    toast("NAS worker URL saved. Password is only needed for refresh.");
-  } else {
-    window.localStorage.removeItem(API_BASE_STORAGE_KEY);
-    toast("NAS worker disconnected.");
-  }
-  runSearch();
-});
-
 async function runSearch({ queryNas = true } = {}) {
   setSearchBusy(true);
   try {
     await syncStateFromInputs();
     state.directionFilter = "all";
     const apiBaseUrl = apiBase();
-    if (queryNas && apiBaseUrl) {
+    const shouldQueryNas = queryNas && apiBaseUrl;
+    if (shouldQueryNas) {
       searchNote.textContent = "Loading saved NAS results...";
     }
-    const nasResult = queryNas && apiBaseUrl ? await fetchNasResults(apiBaseUrl) : null;
-    if (nasResult?.error === "password_required") {
+    const nasResult = shouldQueryNas ? await fetchNasResults(apiBaseUrl) : null;
+    if (nasResult?.error === "unauthorized") {
       state.results = [];
       state.coverageStatus = "unknown";
-      searchNote.textContent = "Refresh requires the NAS password. Search can still read saved results without it.";
-    } else if (nasResult?.error === "unauthorized") {
-      state.results = [];
-      state.coverageStatus = "unknown";
-      searchNote.textContent = "Saved NAS results are not readable from this browser.";
+      searchNote.textContent = "The LAN campsite service did not allow this request.";
     } else if (nasResult) {
       if (nasResult.error) {
         state.coverageStatus = "fallback";
@@ -506,7 +479,7 @@ async function runSearch({ queryNas = true } = {}) {
       const snapshot = publicSnapshotPayload();
       state.results = await prepareResults(snapshot.results, snapshot.checkedMonths);
       searchNote.textContent = !queryNas
-        ? `${websiteSnapshotNote()} Click Search campsites to query the NAS worker.`
+        ? websiteSnapshotNote()
         : apiBaseUrl
         ? `NAS worker is unavailable or blocked. ${websiteSnapshotNote()}`
         : websiteSnapshotNote();
@@ -569,7 +542,7 @@ async function triggerRefresh() {
   await syncStateFromInputs();
   const apiBaseUrl = apiBase();
   if (!apiBaseUrl) {
-    searchNote.textContent = "NAS worker URL is not configured.";
+    searchNote.textContent = "Live refresh is available only from the LAN-hosted NAS site.";
     return;
   }
 
@@ -579,19 +552,13 @@ async function triggerRefresh() {
   updateRefreshStatusPanel({ status: "queued", message: "Starting refresh..." });
 
   const result = await postNasRefresh(apiBaseUrl);
-  if (result?.error === "password_required") {
-    showRefreshAuth();
-    searchNote.textContent = "Enter the NAS password to refresh availability.";
-  } else if (result?.error === "unauthorized") {
-    showRefreshAuth();
-    nasPasswordInput.value = "";
-    searchNote.textContent = "That refresh password did not work. Enter it again and retry.";
+  if (result?.error === "unauthorized") {
+    searchNote.textContent = "Refresh is not allowed by the LAN campsite service configuration.";
   } else if (result) {
     if (result.error) {
       searchNote.textContent = nasErrorMessage(result);
       updateRefreshStatusPanel(result);
     } else {
-      hideRefreshAuth();
       updateRefreshStatusPanel(result);
       searchNote.textContent = refreshMessage(result);
       await pollRefreshStatus(apiBaseUrl);
@@ -680,24 +647,19 @@ async function fetchNasResults(apiBaseUrl) {
 
 async function postNasRefresh(apiBaseUrl) {
   const url = nasUrl(apiBaseUrl, "/api/refresh");
-  return fetchNasJson(url, { method: "POST" }, { requireAuth: Boolean(apiPassword()) });
+  return fetchNasJson(url, { method: "POST" });
 }
 
 async function fetchRefreshStatus(apiBaseUrl) {
   return fetchNasJson(nasUrl(apiBaseUrl, "/api/refresh-status"));
 }
 
-async function fetchNasJson(url, options = {}, { requireAuth = false } = {}) {
+async function fetchNasJson(url, options = {}) {
   let timeout = 0;
   try {
     const controller = new AbortController();
     timeout = window.setTimeout(() => controller.abort(), 12000);
     const headers = { Accept: "application/json", ...(options.headers || {}) };
-    if (requireAuth) {
-      const password = apiPassword();
-      if (!password) return { error: "password_required" };
-      headers.Authorization = `Bearer ${password}`;
-    }
     const response = await fetch(url.toString(), { ...options, headers, signal: controller.signal });
     window.clearTimeout(timeout);
     if (response.status === 401) return { error: "unauthorized" };
@@ -739,7 +701,7 @@ async function pollRefreshStatus(apiBaseUrl) {
     updateRefreshStatusPanel(status);
     searchNote.textContent = refreshMessage(status);
     updateRefreshButton(status);
-    if (status.status && !["queued", "running"].includes(status.status)) return;
+    if (status.status && !["queued", "running", "publishing"].includes(status.status)) return;
   }
   searchNote.textContent = "NAS refresh is still running. Search again in a moment to load the latest snapshot.";
 }
@@ -747,11 +709,12 @@ async function pollRefreshStatus(apiBaseUrl) {
 async function appendRefreshDiagnostic(apiBaseUrl) {
   const status = await fetchRefreshStatus(apiBaseUrl);
   if (!status || status.error || !isRefreshDiagnosticStatus(status.status)) return;
+  updateRefreshStatusPanel(status);
   searchNote.textContent = `${searchNote.textContent} Latest refresh: ${refreshMessage(status)}`;
 }
 
 function isRefreshDiagnosticStatus(status) {
-  return ["auth_failed", "auth_rate_limited", "blocked", "error"].includes(status);
+  return ["auth_failed", "auth_rate_limited", "blocked", "error", "publish_failed", "profile_expired", "profile_missing"].includes(status);
 }
 
 function refreshMessage(status) {
@@ -778,7 +741,17 @@ function updateRefreshStatusPanel(status) {
 
   const total = Number(status.total || 0);
   const checked = Number(status.checked || 0);
-  const completeStatuses = ["complete", "blocked", "error", "auth_failed", "auth_rate_limited"];
+  const completeStatuses = [
+    "complete",
+    "published",
+    "publish_failed",
+    "blocked",
+    "error",
+    "auth_failed",
+    "auth_rate_limited",
+    "profile_expired",
+    "profile_missing",
+  ];
   const percent = total > 0
     ? Math.max(0, Math.min(100, Math.round((checked / total) * 100)))
     : completeStatuses.includes(status.status)
@@ -904,6 +877,10 @@ function populateDateFilters() {
       .map((month) => `<option value="${month}">${formatMonth(month)}</option>`)
       .join(""),
   );
+  const anyMonthOption = monthFilter.querySelector('option[value="any"]');
+  if (anyMonthOption) {
+    monthFilter.append(anyMonthOption);
+  }
 }
 
 function searchWindow() {
@@ -1024,22 +1001,16 @@ function driveTimeLabel(value) {
 }
 
 function apiBase() {
+  if (!canUseNasApi()) {
+    return "";
+  }
   if (window.CAMPSITE_WATCH_API_BASE_URL) {
     return window.CAMPSITE_WATCH_API_BASE_URL;
   }
-
-  const saved = window.localStorage.getItem(API_BASE_STORAGE_KEY);
-  if (saved && !/\.ts\.net|tailscale/i.test(saved)) {
-    return saved;
-  }
-  if (saved) {
-    window.localStorage.removeItem(API_BASE_STORAGE_KEY);
+  if ((window.location.protocol === "http:" || window.location.protocol === "https:") && window.location.host) {
+    return window.location.origin;
   }
   return DEFAULT_API_BASE_URL;
-}
-
-function apiPassword() {
-  return nasPasswordInput.value.trim();
 }
 
 function setSearchBusy(isBusy) {
@@ -1047,14 +1018,17 @@ function setSearchBusy(isBusy) {
   searchButton.textContent = isBusy ? "Searching..." : "Search campsites";
 }
 
-function showRefreshAuth() {
-  refreshAuth.hidden = false;
-  nasPasswordInput.focus();
+function canUseNasApi() {
+  return !isPublicPage();
 }
 
-function hideRefreshAuth() {
-  refreshAuth.hidden = true;
-  nasPasswordInput.value = "";
+function isPublicPage() {
+  return window.location.hostname.endsWith("github.io");
+}
+
+function configureAccessMode() {
+  if (canUseNasApi()) return;
+  refreshButton.hidden = true;
 }
 
 function timingMode() {

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from contextlib import redirect_stdout
 import io
+from pathlib import Path
+import tempfile
 import unittest
 
 from campsite_watch.api import ApiHandler
@@ -37,6 +39,24 @@ class ApiBehaviorTest(unittest.TestCase):
 
         handler._record_auth_success()
         self.assertFalse(handler._auth_rate_limited())
+
+    def test_browser_profile_problem_reports_missing_or_empty_profile(self) -> None:
+        handler = object.__new__(ApiHandler)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            missing = Path(temp_dir) / "missing-profile"
+            handler.browser_profile_dir = missing
+            self.assertIn("missing", handler._browser_profile_problem())
+
+            empty = Path(temp_dir) / "empty-profile"
+            empty.mkdir()
+            handler.browser_profile_dir = empty
+            self.assertIn("empty", handler._browser_profile_problem())
+
+            populated = Path(temp_dir) / "populated-profile"
+            populated.mkdir()
+            (populated / "Preferences").write_text("{}", encoding="utf-8")
+            handler.browser_profile_dir = populated
+            self.assertEqual(handler._browser_profile_problem(), "")
 
     def test_checked_months_survive_zero_result_refresh(self) -> None:
         handler = object.__new__(ApiHandler)

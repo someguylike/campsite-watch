@@ -4,13 +4,13 @@ Small NAS-friendly campsite availability monitor. It checks configured campgroun
 
 ## Web Dashboard
 
-The static dashboard lives in `docs/` so it can run directly on GitHub Pages:
+The public dashboard lives in `docs/` so it can run directly on GitHub Pages:
 
 ```text
 https://someguylike.github.io/campsite-watch/
 ```
 
-It currently uses the latest sample availability pulled through Chrome for parks near `98040`. The next step is wiring it to the Python monitor output so the page updates from scheduled checks.
+The public page is snapshot-only. It reads `docs/latest-results.json` and does not try to reach the private NAS. Live refresh is available from the LAN-hosted site served by the NAS worker.
 
 ## Important Limits
 
@@ -118,9 +118,22 @@ Do not configure Tailscale Funnel, router port forwarding, or public reverse pro
 sudo tailscale serve reset
 ```
 
-The public GitHub Pages snapshot remains useful when you are away from home, but the live NAS refresh flow is intended to run from the LAN-hosted site above. Many browsers block an HTTPS public page from calling an HTTP private-network API, so the LAN-hosted page is the reliable same-network path.
+The public GitHub Pages snapshot remains useful when you are away from home, but the live NAS refresh flow runs only from the LAN-hosted site above. The public page does not call the private NAS URL.
 
-Search reads the latest saved NAS result without a password. Refreshing live availability also works without a password when no `CAMPSITE_WATCH_API_PASSWORD` is configured. If you want an extra LAN-side guard, set `CAMPSITE_WATCH_API_PASSWORD` in `/etc/campsite-watch.env`, restart the service, and enter that password in the website before refreshing. Do not put the password in the public frontend source.
+Search reads the latest saved NAS result without a password. Refreshing live availability also works without a password because the service is intended to be LAN-only.
+
+To set up the browser profile from a Mac and copy it to the NAS in one command:
+
+```bash
+cd ~/campsite-watch
+./scripts/setup_browser_profile_from_mac.sh
+```
+
+By default the script copies to `nampham@nampham-server:/opt/campsite-watch/browser-profile` and restarts `campsite-watch-api`. Override those defaults only if needed:
+
+```bash
+NAS_HOST=192.168.1.123 NAS_USER=nampham ./scripts/setup_browser_profile_from_mac.sh
+```
 
 To publish the latest NAS results as the public GitHub Pages snapshot, configure GitHub push credentials on the NAS and run:
 
@@ -139,7 +152,7 @@ POST /api/refresh?zip=98040&people=4&distance=240&distanceMode=hours&month=2026-
 GET /api/refresh-status
 ```
 
-`GET /api/search` and `GET /api/refresh-status` are read-only and public to whoever can reach the NAS URL. `POST /api/refresh` requires `Authorization: Bearer <NAS password>` only when `CAMPSITE_WATCH_API_PASSWORD` is configured.
+`GET /api/search`, `GET /api/refresh-status`, and `POST /api/refresh` are available to whoever can reach the LAN-only NAS URL.
 
 Response:
 
@@ -161,7 +174,7 @@ The refresh endpoint is frontend-triggerable, but it still obeys the reservation
 To refresh the rolling campsite cache automatically from the NAS, install `scripts/refresh_next_six_months.sh` in cron. The script triggers one month at a time, waits for each month to finish, and defaults to the next 6 calendar months, 4 people, and a 5-hour drive from `98040`:
 
 ```cron
-17 */12 * * * CAMPSITE_WATCH_API_PASSWORD="choose-a-private-password" /home/nampham/campsite-watch/scripts/refresh_next_six_months.sh >> /home/nampham/campsite-watch/data/refresh-cron.log 2>&1
+17 */12 * * * /home/nampham/campsite-watch/scripts/refresh_next_six_months.sh >> /home/nampham/campsite-watch/data/refresh-cron.log 2>&1
 ```
 
 ## Configuration Notes
