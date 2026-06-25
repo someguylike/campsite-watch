@@ -1,20 +1,2000 @@
 {
-  "source": "fallback",
-  "lastChecked": "2026-06-09T17:55:00Z",
+  "checkedMonths": [
+    "2026-08"
+  ],
+  "lastChecked": "2026-06-25T07:31:28.288502+00:00",
   "results": [
     {
-      "date": "2026-07-10",
-      "end": "2026-07-12",
-      "park": "Blake Island State Park",
+      "accessNote": "Water access only",
+      "availableTentSites": 2,
       "city": "Manchester",
-      "zip": "98353",
+      "date": "2026-08-07",
+      "distanceMiles": 12,
+      "end": "2026-08-09",
       "lat": 47.54247,
       "lon": -122.4834,
-      "resourceLocationId": -2147483640,
-      "transactionLocationId": -2147483641,
       "mapId": -2147483404,
+      "park": "Blake Island State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/blake-island-state-park",
+      "resourceLocationId": -2147483640,
+      "sampleSites": [
+        [
+          "Main Loop",
+          "10"
+        ],
+        [
+          "Main Loop",
+          "21"
+        ]
+      ],
+      "transactionLocationId": -2147483641,
+      "zip": "98353"
+    },
+    {
+      "availableTentSites": 9,
+      "city": "Federal Way",
+      "date": "2026-08-07",
+      "distanceMiles": 19,
+      "end": "2026-08-09",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Dash%20Point%20sunset.jpg?itok=It44txII",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Dash%20Point%20sunset.jpg?itok=It44txII",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/dashpoint-beach4.jpg?itok=hcbxQxoC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Beach_03132023.jpg?itok=x5WR_gDv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Campsite_03132023.jpg?itok=REuSeIOH",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Campsite2_03132023.jpg?itok=Gq4kynUg",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_CampTrail_03132023.jpg?itok=6VxmT_8K"
+      ],
+      "lat": 47.31779,
+      "lon": -122.4071,
+      "mapId": -2147483389,
+      "park": "Dash Point State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/dash-point-state-park",
+      "resourceLocationId": -2147483625,
+      "sampleSites": [
+        [
+          "A",
+          "65"
+        ],
+        [
+          "A",
+          "101"
+        ],
+        [
+          "A",
+          "52"
+        ],
+        [
+          "A",
+          "54"
+        ],
+        [
+          "A",
+          "116"
+        ],
+        [
+          "A",
+          "70"
+        ],
+        [
+          "A",
+          "72"
+        ],
+        [
+          "B",
+          "13"
+        ]
+      ],
+      "transactionLocationId": -2147483631,
+      "zip": "98023"
+    },
+    {
       "availableTentSites": 1,
-      "sampleSites": [["Main Loop", "21"]]
+      "city": "Coupeville",
+      "date": "2026-08-07",
+      "distanceMiles": 52,
+      "end": "2026-08-09",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Beach-5-31-23.jpg?itok=oIB4GFM8",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Beach-5-31-23.jpg?itok=oIB4GFM8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Battery-5-31-23.jpg?itok=B8Lk90NU",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Family-5-23-31.jpg?itok=xWpV4w-5",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Marsh-5-23-31.jpg?itok=TP6Pmf0Q",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Paragliding-5-23-31.jpg?itok=Tcx62eZ2",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-04/Ft%20Ebey%20trail%20abbt%20sunset.jpg?itok=aaM_D5LD"
+      ],
+      "lat": 48.22462,
+      "lon": -122.7584,
+      "mapId": -2147483385,
+      "park": "Fort Ebey State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/fort-ebey-state-park",
+      "resourceLocationId": -2147483616,
+      "sampleSites": [
+        [
+          "Main",
+          "7"
+        ]
+      ],
+      "transactionLocationId": -2147483623,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Chehalis",
+      "date": "2026-08-07",
+      "distanceMiles": 80,
+      "end": "2026-08-09",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Waterfall.jpg?itok=zfh-5WRu",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Waterfall.jpg?itok=zfh-5WRu",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Campsite.jpg?itok=GlXsH2Xf",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_ChehalisRiver.jpg?itok=_C89h7pj",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_KitchenShelter.jpg?itok=Jr1SaiL8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_KitchenShelter2.jpg?itok=H3_47DGC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_RangerStation.jpg?itok=cPEUtWVf"
+      ],
+      "lat": 46.63442,
+      "lon": -123.2341,
+      "mapId": -2147483423,
+      "park": "Rainbow Falls State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/rainbow-falls-state-park",
+      "resourceLocationId": -2147483568,
+      "sampleSites": [
+        [
+          "Campground",
+          "E1"
+        ]
+      ],
+      "transactionLocationId": -2147483589,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 6,
+      "city": "Hoquiam",
+      "date": "2026-08-07",
+      "distanceMiles": 98,
+      "end": "2026-08-09",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake2_05-25-2015.jpg?itok=1A6fcHH-",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake2_05-25-2015.jpg?itok=1A6fcHH-",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Ocean%20City%20Entrance%20Sign.JPG?itok=aoSx_Gs8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_RangerStation_05-25-2015.jpg?itok=4V3imnrD",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake_05-15-2015.jpg?itok=srmUVntQ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake3_05-25-2015.jpg?itok=JDX1va_Y",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Campsite_05-25-2015.jpg?itok=t_qeci34"
+      ],
+      "lat": 47.03147,
+      "lon": -124.1566,
+      "mapId": -2147483368,
+      "park": "Ocean City State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/ocean-city-state-park",
+      "resourceLocationId": -2147483582,
+      "sampleSites": [
+        [
+          "Loop 2",
+          "58"
+        ],
+        [
+          "Loop 2",
+          "38"
+        ],
+        [
+          "Loop 2",
+          "44"
+        ],
+        [
+          "Loop 2",
+          "47"
+        ],
+        [
+          "Loop 2",
+          "39"
+        ],
+        [
+          "Loop 1",
+          "1"
+        ]
+      ],
+      "transactionLocationId": -2147483597,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 6,
+      "city": "Westport",
+      "date": "2026-08-07",
+      "distanceMiles": 101,
+      "end": "2026-08-09",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-01/Twin%20Harbors%20beach%20sunset.jpeg?itok=YzT72dBS",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-01/Twin%20Harbors%20beach%20sunset.jpeg?itok=YzT72dBS",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_CampSite.jpg?itok=MJynjDVs",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_TentSite.jpg?itok=9iypdW0C",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_Cabins.jpg?itok=iYwCP_7g",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_Yurt3.jpg?itok=n9I_uFAE",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_ParkOffice.jpg?itok=jIaY4sLU"
+      ],
+      "lat": 46.85614,
+      "lon": -124.1082,
+      "mapId": -2147483352,
+      "park": "Twin Harbors State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/twin-harbors-state-park",
+      "resourceLocationId": -2147483547,
+      "sampleSites": [
+        [
+          "B",
+          "32"
+        ],
+        [
+          "B",
+          "17"
+        ],
+        [
+          "B",
+          "23"
+        ],
+        [
+          "B",
+          "22"
+        ],
+        [
+          "B",
+          "21"
+        ],
+        [
+          "B",
+          "30"
+        ]
+      ],
+      "transactionLocationId": -2147483573,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 54,
+      "city": "Yakima",
+      "date": "2026-08-07",
+      "distanceMiles": 107,
+      "end": "2026-08-09",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicArea.jpg?itok=xYp7PyWF",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicArea.jpg?itok=xYp7PyWF",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/yakama-sportsman-7-birds-reeds.jpg?itok=nxkdPmNv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_Campsites.jpg?itok=BlBldjHX",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicShelter.jpg?itok=6R4xmoYJ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_WaterView.jpg?itok=VCx2DNc0"
+      ],
+      "lat": 46.59188,
+      "lon": -120.4529,
+      "mapId": -2147483348,
+      "park": "Yakima Sportsman State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/yakima-sportsman-state-park",
+      "resourceLocationId": -2147483540,
+      "sampleSites": [
+        [
+          "Sites 1-74",
+          "48"
+        ],
+        [
+          "Sites 1-74",
+          "32"
+        ],
+        [
+          "Sites 1-74",
+          "36"
+        ],
+        [
+          "Sites 1-74",
+          "69"
+        ],
+        [
+          "Sites 1-74",
+          "53"
+        ],
+        [
+          "Sites 1-74",
+          "2"
+        ],
+        [
+          "Sites 1-74",
+          "13"
+        ],
+        [
+          "Sites 1-74",
+          "70"
+        ]
+      ],
+      "transactionLocationId": -2147483566,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 39,
+      "city": "Federal Way",
+      "date": "2026-08-14",
+      "distanceMiles": 19,
+      "end": "2026-08-16",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Dash%20Point%20sunset.jpg?itok=It44txII",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Dash%20Point%20sunset.jpg?itok=It44txII",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/dashpoint-beach4.jpg?itok=hcbxQxoC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Beach_03132023.jpg?itok=x5WR_gDv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Campsite_03132023.jpg?itok=REuSeIOH",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Campsite2_03132023.jpg?itok=Gq4kynUg",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_CampTrail_03132023.jpg?itok=6VxmT_8K"
+      ],
+      "lat": 47.31779,
+      "lon": -122.4071,
+      "mapId": -2147483389,
+      "park": "Dash Point State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/dash-point-state-park",
+      "resourceLocationId": -2147483625,
+      "sampleSites": [
+        [
+          "A",
+          "69"
+        ],
+        [
+          "A",
+          "102"
+        ],
+        [
+          "A",
+          "55"
+        ],
+        [
+          "A",
+          "108"
+        ],
+        [
+          "A",
+          "81"
+        ],
+        [
+          "A",
+          "56"
+        ],
+        [
+          "A",
+          "68"
+        ],
+        [
+          "A",
+          "65"
+        ]
+      ],
+      "transactionLocationId": -2147483631,
+      "zip": "98023"
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Concrete",
+      "date": "2026-08-14",
+      "distanceMiles": 67,
+      "end": "2026-08-16",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_WelcomeSign.jpg?itok=Y36MiyGE",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_WelcomeSign.jpg?itok=Y36MiyGE",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_TrailSign.jpg?itok=SL-WK8ym",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_PicnicArea.jpg?itok=v8IYQ8AC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_Trail4.jpg?itok=qGnftmV8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_VisitorCenter.jpg?itok=5YNoSfgk",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_DayUse.jpg?itok=LTKPn12B"
+      ],
+      "lat": 48.51847,
+      "lon": -121.9033,
+      "mapId": -2147483362,
+      "park": "Rasar State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/rasar-state-park",
+      "resourceLocationId": -2147483567,
+      "sampleSites": [
+        [
+          "Sites 24-48, Adirondacks",
+          "45"
+        ]
+      ],
+      "transactionLocationId": -2147483588,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 7,
+      "city": "Winlock",
+      "date": "2026-08-14",
+      "distanceMiles": 78,
+      "end": "2026-08-16",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Entrance%26RangerStation_03-01-2023.jpg?itok=yW4yzQY-",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Entrance%26RangerStation_03-01-2023.jpg?itok=yW4yzQY-",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Amphitheater_03-01-2023.jpg?itok=WtzVe709",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Bathroom_03-01-2023.jpg?itok=2jYIOgXN",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Campsite_03-01-2023.jpg?itok=vp8LU6zw",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Firecircle_03-01-2023.jpg?itok=1OZmT8O7",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Footbridge_03-01-2023.jpg?itok=af_59VN1"
+      ],
+      "lat": 46.5225,
+      "lon": -122.8133,
+      "mapId": -2147483373,
+      "park": "Lewis and Clark State Park (SW Washington)",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/lewis-clark-state-park",
+      "resourceLocationId": -2147483592,
+      "sampleSites": [
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "4"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "13"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "9"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "17"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "10"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "25"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "19"
+        ]
+      ],
+      "transactionLocationId": -2147483606,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Chehalis",
+      "date": "2026-08-14",
+      "distanceMiles": 80,
+      "end": "2026-08-16",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Waterfall.jpg?itok=zfh-5WRu",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Waterfall.jpg?itok=zfh-5WRu",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Campsite.jpg?itok=GlXsH2Xf",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_ChehalisRiver.jpg?itok=_C89h7pj",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_KitchenShelter.jpg?itok=Jr1SaiL8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_KitchenShelter2.jpg?itok=H3_47DGC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_RangerStation.jpg?itok=cPEUtWVf"
+      ],
+      "lat": 46.63442,
+      "lon": -123.2341,
+      "mapId": -2147483423,
+      "park": "Rainbow Falls State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/rainbow-falls-state-park",
+      "resourceLocationId": -2147483568,
+      "sampleSites": [
+        [
+          "Campground",
+          "E1"
+        ]
+      ],
+      "transactionLocationId": -2147483589,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 14,
+      "city": "Hoquiam",
+      "date": "2026-08-14",
+      "distanceMiles": 98,
+      "end": "2026-08-16",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake2_05-25-2015.jpg?itok=1A6fcHH-",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake2_05-25-2015.jpg?itok=1A6fcHH-",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Ocean%20City%20Entrance%20Sign.JPG?itok=aoSx_Gs8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_RangerStation_05-25-2015.jpg?itok=4V3imnrD",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake_05-15-2015.jpg?itok=srmUVntQ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake3_05-25-2015.jpg?itok=JDX1va_Y",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Campsite_05-25-2015.jpg?itok=t_qeci34"
+      ],
+      "lat": 47.03147,
+      "lon": -124.1566,
+      "mapId": -2147483368,
+      "park": "Ocean City State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/ocean-city-state-park",
+      "resourceLocationId": -2147483582,
+      "sampleSites": [
+        [
+          "Loop 2",
+          "51"
+        ],
+        [
+          "Loop 2",
+          "41"
+        ],
+        [
+          "Loop 2",
+          "70"
+        ],
+        [
+          "Loop 3",
+          "109"
+        ],
+        [
+          "Loop 3",
+          "124"
+        ],
+        [
+          "Loop 3",
+          "75"
+        ],
+        [
+          "Loop 3",
+          "79"
+        ],
+        [
+          "Loop 3",
+          "81"
+        ]
+      ],
+      "transactionLocationId": -2147483597,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 4,
+      "city": "Westport",
+      "date": "2026-08-14",
+      "distanceMiles": 101,
+      "end": "2026-08-16",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-01/Twin%20Harbors%20beach%20sunset.jpeg?itok=YzT72dBS",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-01/Twin%20Harbors%20beach%20sunset.jpeg?itok=YzT72dBS",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_CampSite.jpg?itok=MJynjDVs",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_TentSite.jpg?itok=9iypdW0C",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_Cabins.jpg?itok=iYwCP_7g",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_Yurt3.jpg?itok=n9I_uFAE",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_ParkOffice.jpg?itok=jIaY4sLU"
+      ],
+      "lat": 46.85614,
+      "lon": -124.1082,
+      "mapId": -2147483352,
+      "park": "Twin Harbors State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/twin-harbors-state-park",
+      "resourceLocationId": -2147483547,
+      "sampleSites": [
+        [
+          "B",
+          "20"
+        ],
+        [
+          "B",
+          "17"
+        ],
+        [
+          "B",
+          "18"
+        ],
+        [
+          "B",
+          "16"
+        ]
+      ],
+      "transactionLocationId": -2147483573,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 52,
+      "city": "Yakima",
+      "date": "2026-08-14",
+      "distanceMiles": 107,
+      "end": "2026-08-16",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicArea.jpg?itok=xYp7PyWF",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicArea.jpg?itok=xYp7PyWF",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/yakama-sportsman-7-birds-reeds.jpg?itok=nxkdPmNv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_Campsites.jpg?itok=BlBldjHX",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicShelter.jpg?itok=6R4xmoYJ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_WaterView.jpg?itok=VCx2DNc0"
+      ],
+      "lat": 46.59188,
+      "lon": -120.4529,
+      "mapId": -2147483348,
+      "park": "Yakima Sportsman State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/yakima-sportsman-state-park",
+      "resourceLocationId": -2147483540,
+      "sampleSites": [
+        [
+          "Sites 1-74",
+          "48"
+        ],
+        [
+          "Sites 1-74",
+          "32"
+        ],
+        [
+          "Sites 1-74",
+          "36"
+        ],
+        [
+          "Sites 1-74",
+          "69"
+        ],
+        [
+          "Sites 1-74",
+          "53"
+        ],
+        [
+          "Sites 1-74",
+          "2"
+        ],
+        [
+          "Sites 1-74",
+          "70"
+        ],
+        [
+          "Sites 1-74",
+          "59"
+        ]
+      ],
+      "transactionLocationId": -2147483566,
+      "zip": ""
+    },
+    {
+      "accessNote": "Water access only",
+      "availableTentSites": 4,
+      "city": "Manchester",
+      "date": "2026-08-21",
+      "distanceMiles": 12,
+      "end": "2026-08-23",
+      "lat": 47.54247,
+      "lon": -122.4834,
+      "mapId": -2147483404,
+      "park": "Blake Island State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/blake-island-state-park",
+      "resourceLocationId": -2147483640,
+      "sampleSites": [
+        [
+          "Main Loop",
+          "9"
+        ],
+        [
+          "Main Loop",
+          "19"
+        ],
+        [
+          "Main Loop",
+          "22"
+        ],
+        [
+          "Main Loop",
+          "32"
+        ]
+      ],
+      "transactionLocationId": -2147483641,
+      "zip": "98353"
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Bremerton",
+      "date": "2026-08-21",
+      "distanceMiles": 18,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Guns.jpg?itok=1fbvIppb",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Guns.jpg?itok=1fbvIppb",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Dock.jpg?itok=AtrbgXxN",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Beach.jpg?itok=ymXFqXY3",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Trail.jpg?itok=Mx6vjTLw",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_PicnicShelter.jpg?itok=2aLRqMme"
+      ],
+      "lat": 47.59558,
+      "lon": -122.5974,
+      "mapId": -2147483380,
+      "park": "Illahee State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/illahee-state-park",
+      "resourceLocationId": -2147483607,
+      "sampleSites": [
+        [
+          "Sites 1-25",
+          "3"
+        ]
+      ],
+      "transactionLocationId": -2147483616,
+      "zip": "98310"
+    },
+    {
+      "availableTentSites": 27,
+      "city": "Federal Way",
+      "date": "2026-08-21",
+      "distanceMiles": 19,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Dash%20Point%20sunset.jpg?itok=It44txII",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Dash%20Point%20sunset.jpg?itok=It44txII",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/dashpoint-beach4.jpg?itok=hcbxQxoC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Beach_03132023.jpg?itok=x5WR_gDv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Campsite_03132023.jpg?itok=REuSeIOH",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Campsite2_03132023.jpg?itok=Gq4kynUg",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_CampTrail_03132023.jpg?itok=6VxmT_8K"
+      ],
+      "lat": 47.31779,
+      "lon": -122.4071,
+      "mapId": -2147483389,
+      "park": "Dash Point State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/dash-point-state-park",
+      "resourceLocationId": -2147483625,
+      "sampleSites": [
+        [
+          "A",
+          "108"
+        ],
+        [
+          "A",
+          "81"
+        ],
+        [
+          "A",
+          "131"
+        ],
+        [
+          "A",
+          "128"
+        ],
+        [
+          "A",
+          "111"
+        ],
+        [
+          "A",
+          "74"
+        ],
+        [
+          "A",
+          "130"
+        ],
+        [
+          "A",
+          "52"
+        ]
+      ],
+      "transactionLocationId": -2147483631,
+      "zip": "98023"
+    },
+    {
+      "availableTentSites": 16,
+      "city": "Belfair",
+      "date": "2026-08-21",
+      "distanceMiles": 32,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/DSC00103.JPG?itok=nqbzcpFx",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/DSC00103.JPG?itok=nqbzcpFx",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/DSC00109.JPG?itok=RSHf7Txp",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Belfair_KitchenShelter_RR.jpg?itok=rFRE4cj_",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Belfair_playground_kitchenshelter.JPG?itok=vMeiVlIs",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Belfair_Playground.jpg?itok=c8_DgJJo",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Belfair_cabin_typical.JPG?itok=8svc_6cS"
+      ],
+      "lat": 47.43167,
+      "lon": -122.877,
+      "mapId": -2147483319,
+      "park": "Belfair State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/belfair-state-park",
+      "resourceLocationId": -2147483643,
+      "sampleSites": [
+        [
+          "Tree Loop",
+          "311"
+        ],
+        [
+          "Tree Loop",
+          "314"
+        ],
+        [
+          "Tree Loop",
+          "316"
+        ],
+        [
+          "Tree Loop",
+          "322"
+        ],
+        [
+          "Tree Loop",
+          "333"
+        ],
+        [
+          "Tree Loop",
+          "327"
+        ],
+        [
+          "Tree Loop",
+          "312"
+        ],
+        [
+          "Tree Loop",
+          "301"
+        ]
+      ],
+      "transactionLocationId": -2147483643,
+      "zip": "98528"
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Coupeville",
+      "date": "2026-08-21",
+      "distanceMiles": 52,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Beach-5-31-23.jpg?itok=oIB4GFM8",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Beach-5-31-23.jpg?itok=oIB4GFM8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Battery-5-31-23.jpg?itok=B8Lk90NU",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Family-5-23-31.jpg?itok=xWpV4w-5",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Marsh-5-23-31.jpg?itok=TP6Pmf0Q",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Fort_Ebey-Paragliding-5-23-31.jpg?itok=Tcx62eZ2",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-04/Ft%20Ebey%20trail%20abbt%20sunset.jpg?itok=aaM_D5LD"
+      ],
+      "lat": 48.22462,
+      "lon": -122.7584,
+      "mapId": -2147483385,
+      "park": "Fort Ebey State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/fort-ebey-state-park",
+      "resourceLocationId": -2147483616,
+      "sampleSites": [
+        [
+          "Main",
+          "7"
+        ]
+      ],
+      "transactionLocationId": -2147483623,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Concrete",
+      "date": "2026-08-21",
+      "distanceMiles": 67,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_WelcomeSign.jpg?itok=Y36MiyGE",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_WelcomeSign.jpg?itok=Y36MiyGE",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_TrailSign.jpg?itok=SL-WK8ym",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_PicnicArea.jpg?itok=v8IYQ8AC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_Trail4.jpg?itok=qGnftmV8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_VisitorCenter.jpg?itok=5YNoSfgk",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_DayUse.jpg?itok=LTKPn12B"
+      ],
+      "lat": 48.51847,
+      "lon": -121.9033,
+      "mapId": -2147483362,
+      "park": "Rasar State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/rasar-state-park",
+      "resourceLocationId": -2147483567,
+      "sampleSites": [
+        [
+          "Sites 24-48, Adirondacks",
+          "45"
+        ]
+      ],
+      "transactionLocationId": -2147483588,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 3,
+      "city": "Winlock",
+      "date": "2026-08-21",
+      "distanceMiles": 78,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Entrance%26RangerStation_03-01-2023.jpg?itok=yW4yzQY-",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Entrance%26RangerStation_03-01-2023.jpg?itok=yW4yzQY-",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Amphitheater_03-01-2023.jpg?itok=WtzVe709",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Bathroom_03-01-2023.jpg?itok=2jYIOgXN",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Campsite_03-01-2023.jpg?itok=vp8LU6zw",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Firecircle_03-01-2023.jpg?itok=1OZmT8O7",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Footbridge_03-01-2023.jpg?itok=af_59VN1"
+      ],
+      "lat": 46.5225,
+      "lon": -122.8133,
+      "mapId": -2147483373,
+      "park": "Lewis and Clark State Park (SW Washington)",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/lewis-clark-state-park",
+      "resourceLocationId": -2147483592,
+      "sampleSites": [
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "3"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "4"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "1"
+        ]
+      ],
+      "transactionLocationId": -2147483606,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Chehalis",
+      "date": "2026-08-21",
+      "distanceMiles": 80,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Waterfall.jpg?itok=zfh-5WRu",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Waterfall.jpg?itok=zfh-5WRu",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Campsite.jpg?itok=GlXsH2Xf",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_ChehalisRiver.jpg?itok=_C89h7pj",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_KitchenShelter.jpg?itok=Jr1SaiL8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_KitchenShelter2.jpg?itok=H3_47DGC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_RangerStation.jpg?itok=cPEUtWVf"
+      ],
+      "lat": 46.63442,
+      "lon": -123.2341,
+      "mapId": -2147483423,
+      "park": "Rainbow Falls State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/rainbow-falls-state-park",
+      "resourceLocationId": -2147483568,
+      "sampleSites": [
+        [
+          "Campground",
+          "E1"
+        ]
+      ],
+      "transactionLocationId": -2147483589,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 24,
+      "city": "Hoquiam",
+      "date": "2026-08-21",
+      "distanceMiles": 98,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake2_05-25-2015.jpg?itok=1A6fcHH-",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake2_05-25-2015.jpg?itok=1A6fcHH-",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Ocean%20City%20Entrance%20Sign.JPG?itok=aoSx_Gs8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_RangerStation_05-25-2015.jpg?itok=4V3imnrD",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake_05-15-2015.jpg?itok=srmUVntQ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake3_05-25-2015.jpg?itok=JDX1va_Y",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Campsite_05-25-2015.jpg?itok=t_qeci34"
+      ],
+      "lat": 47.03147,
+      "lon": -124.1566,
+      "mapId": -2147483368,
+      "park": "Ocean City State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/ocean-city-state-park",
+      "resourceLocationId": -2147483582,
+      "sampleSites": [
+        [
+          "Loop 2",
+          "69"
+        ],
+        [
+          "Loop 2",
+          "40"
+        ],
+        [
+          "Loop 2",
+          "51"
+        ],
+        [
+          "Loop 2",
+          "49"
+        ],
+        [
+          "Loop 2",
+          "63"
+        ],
+        [
+          "Loop 2",
+          "38"
+        ],
+        [
+          "Loop 2",
+          "61"
+        ],
+        [
+          "Loop 2",
+          "44"
+        ]
+      ],
+      "transactionLocationId": -2147483597,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 5,
+      "city": "Westport",
+      "date": "2026-08-21",
+      "distanceMiles": 101,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-01/Twin%20Harbors%20beach%20sunset.jpeg?itok=YzT72dBS",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-01/Twin%20Harbors%20beach%20sunset.jpeg?itok=YzT72dBS",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_CampSite.jpg?itok=MJynjDVs",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_TentSite.jpg?itok=9iypdW0C",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_Cabins.jpg?itok=iYwCP_7g",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_Yurt3.jpg?itok=n9I_uFAE",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_ParkOffice.jpg?itok=jIaY4sLU"
+      ],
+      "lat": 46.85614,
+      "lon": -124.1082,
+      "mapId": -2147483352,
+      "park": "Twin Harbors State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/twin-harbors-state-park",
+      "resourceLocationId": -2147483547,
+      "sampleSites": [
+        [
+          "B",
+          "32"
+        ],
+        [
+          "B",
+          "19"
+        ],
+        [
+          "B",
+          "46"
+        ],
+        [
+          "B",
+          "45"
+        ],
+        [
+          "B",
+          "31"
+        ]
+      ],
+      "transactionLocationId": -2147483573,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 66,
+      "city": "Yakima",
+      "date": "2026-08-21",
+      "distanceMiles": 107,
+      "end": "2026-08-23",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicArea.jpg?itok=xYp7PyWF",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicArea.jpg?itok=xYp7PyWF",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/yakama-sportsman-7-birds-reeds.jpg?itok=nxkdPmNv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_Campsites.jpg?itok=BlBldjHX",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicShelter.jpg?itok=6R4xmoYJ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_WaterView.jpg?itok=VCx2DNc0"
+      ],
+      "lat": 46.59188,
+      "lon": -120.4529,
+      "mapId": -2147483348,
+      "park": "Yakima Sportsman State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/yakima-sportsman-state-park",
+      "resourceLocationId": -2147483540,
+      "sampleSites": [
+        [
+          "Sites 1-74",
+          "48"
+        ],
+        [
+          "Sites 1-74",
+          "32"
+        ],
+        [
+          "Sites 1-74",
+          "15"
+        ],
+        [
+          "Sites 1-74",
+          "36"
+        ],
+        [
+          "Sites 1-74",
+          "53"
+        ],
+        [
+          "Sites 1-74",
+          "2"
+        ],
+        [
+          "Sites 1-74",
+          "13"
+        ],
+        [
+          "Sites 1-74",
+          "70"
+        ]
+      ],
+      "transactionLocationId": -2147483566,
+      "zip": ""
+    },
+    {
+      "accessNote": "Water access only",
+      "availableTentSites": 7,
+      "city": "Manchester",
+      "date": "2026-08-28",
+      "distanceMiles": 12,
+      "end": "2026-08-30",
+      "lat": 47.54247,
+      "lon": -122.4834,
+      "mapId": -2147483404,
+      "park": "Blake Island State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/blake-island-state-park",
+      "resourceLocationId": -2147483640,
+      "sampleSites": [
+        [
+          "Main Loop",
+          "5"
+        ],
+        [
+          "Main Loop",
+          "6"
+        ],
+        [
+          "Main Loop",
+          "21"
+        ],
+        [
+          "Main Loop",
+          "22"
+        ],
+        [
+          "Main Loop",
+          "28"
+        ],
+        [
+          "Main Loop",
+          "29"
+        ],
+        [
+          "West Loop",
+          "41"
+        ]
+      ],
+      "transactionLocationId": -2147483641,
+      "zip": "98353"
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Port Orchard",
+      "date": "2026-08-28",
+      "distanceMiles": 16,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Manchester%20Torpedo%20Warehouse%202022.jpg?itok=rVEwLxkm",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Manchester%20Torpedo%20Warehouse%202022.jpg?itok=rVEwLxkm",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Manchester%20Shore%202022.jpg?itok=v8Y5M4Tg",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Manchester%20Torpedo%20Warehouse2%202022.jpg?itok=YMmHN8gg",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Manchester%20Torpedo%20Warehouse%20interior%202022.jpg?itok=kYGKJ-Mo",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Manchester%20picnicking.jpg?itok=U9ryo1Xs",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Manchester%20casemate%202019.jpg?itok=BJcyJ6kr"
+      ],
+      "lat": 47.57732,
+      "lon": -122.5563,
+      "mapId": -2147483371,
+      "park": "Manchester State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/manchester-state-park",
+      "resourceLocationId": -2147483589,
+      "sampleSites": [
+        [
+          "Lower Loop",
+          "49"
+        ]
+      ],
+      "transactionLocationId": -2147483603,
+      "zip": "98366"
+    },
+    {
+      "availableTentSites": 7,
+      "city": "Bremerton",
+      "date": "2026-08-28",
+      "distanceMiles": 18,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Guns.jpg?itok=1fbvIppb",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Guns.jpg?itok=1fbvIppb",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Dock.jpg?itok=AtrbgXxN",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Beach.jpg?itok=ymXFqXY3",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_Trail.jpg?itok=Mx6vjTLw",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Illahee_PicnicShelter.jpg?itok=2aLRqMme"
+      ],
+      "lat": 47.59558,
+      "lon": -122.5974,
+      "mapId": -2147483380,
+      "park": "Illahee State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/illahee-state-park",
+      "resourceLocationId": -2147483607,
+      "sampleSites": [
+        [
+          "Sites 1-25",
+          "16"
+        ],
+        [
+          "Sites 1-25",
+          "21"
+        ],
+        [
+          "Sites 1-25",
+          "22"
+        ],
+        [
+          "Sites 1-25",
+          "4"
+        ],
+        [
+          "Sites 1-25",
+          "23"
+        ],
+        [
+          "Sites 1-25",
+          "3"
+        ],
+        [
+          "Sites 1-25",
+          "19"
+        ]
+      ],
+      "transactionLocationId": -2147483616,
+      "zip": "98310"
+    },
+    {
+      "availableTentSites": 76,
+      "city": "Federal Way",
+      "date": "2026-08-28",
+      "distanceMiles": 19,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Dash%20Point%20sunset.jpg?itok=It44txII",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Dash%20Point%20sunset.jpg?itok=It44txII",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/dashpoint-beach4.jpg?itok=hcbxQxoC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Beach_03132023.jpg?itok=x5WR_gDv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Campsite_03132023.jpg?itok=REuSeIOH",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_Campsite2_03132023.jpg?itok=Gq4kynUg",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/DashPoint_CampTrail_03132023.jpg?itok=6VxmT_8K"
+      ],
+      "lat": 47.31779,
+      "lon": -122.4071,
+      "mapId": -2147483389,
+      "park": "Dash Point State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/dash-point-state-park",
+      "resourceLocationId": -2147483625,
+      "sampleSites": [
+        [
+          "A",
+          "69"
+        ],
+        [
+          "A",
+          "102"
+        ],
+        [
+          "A",
+          "55"
+        ],
+        [
+          "A",
+          "108"
+        ],
+        [
+          "A",
+          "81"
+        ],
+        [
+          "A",
+          "56"
+        ],
+        [
+          "A",
+          "68"
+        ],
+        [
+          "A",
+          "65"
+        ]
+      ],
+      "transactionLocationId": -2147483631,
+      "zip": "98023"
+    },
+    {
+      "availableTentSites": 49,
+      "city": "Belfair",
+      "date": "2026-08-28",
+      "distanceMiles": 32,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/DSC00103.JPG?itok=nqbzcpFx",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/DSC00103.JPG?itok=nqbzcpFx",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/DSC00109.JPG?itok=RSHf7Txp",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Belfair_KitchenShelter_RR.jpg?itok=rFRE4cj_",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Belfair_playground_kitchenshelter.JPG?itok=vMeiVlIs",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Belfair_Playground.jpg?itok=c8_DgJJo",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Belfair_cabin_typical.JPG?itok=8svc_6cS"
+      ],
+      "lat": 47.43167,
+      "lon": -122.877,
+      "mapId": -2147483319,
+      "park": "Belfair State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/belfair-state-park",
+      "resourceLocationId": -2147483643,
+      "sampleSites": [
+        [
+          "Beach Loop",
+          "143"
+        ],
+        [
+          "Beach Loop",
+          "142"
+        ],
+        [
+          "Beach Loop",
+          "103"
+        ],
+        [
+          "Beach Loop",
+          "128"
+        ],
+        [
+          "Beach Loop",
+          "129"
+        ],
+        [
+          "Tree Loop",
+          "311"
+        ],
+        [
+          "Tree Loop",
+          "314"
+        ],
+        [
+          "Tree Loop",
+          "316"
+        ]
+      ],
+      "transactionLocationId": -2147483643,
+      "zip": "98528"
+    },
+    {
+      "availableTentSites": 4,
+      "city": "Lakebay",
+      "date": "2026-08-28",
+      "distanceMiles": 33,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-11/DSC_2629_DxO_0.jpg?itok=ukZ8s2g4",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-11/DSC_2629_DxO_0.jpg?itok=ukZ8s2g4",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-11/DSC_1860_DxO.jpg?itok=VmxXSMem",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-11/DSC_1872_DxO.jpg?itok=oIq8TVw6",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-11/DSC_1890_DxO.jpg?itok=4aixGs0N",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-11/DSC_1886_DxO.jpg?itok=b-EcurEQ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-11/DSC_2626_DxO_0.jpg?itok=6N-nfYAg"
+      ],
+      "lat": 47.25354,
+      "lon": -122.7484,
+      "mapId": -2147483364,
+      "park": "Penrose Point State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/penrose-point-state-park",
+      "resourceLocationId": -2147483572,
+      "sampleSites": [
+        [
+          "Sites 1-83",
+          "77"
+        ],
+        [
+          "Sites 1-83",
+          "82"
+        ],
+        [
+          "Sites 1-83",
+          "67"
+        ],
+        [
+          "Sites 1-83",
+          "78"
+        ]
+      ],
+      "transactionLocationId": -2147483592,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 3,
+      "city": "Shelton",
+      "date": "2026-08-28",
+      "distanceMiles": 37,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Jarrell%20Cove%20-%20CoveView_03-16-2023.jpg?itok=BzaNozCa",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Jarrell%20Cove%20-%20CoveView_03-16-2023.jpg?itok=BzaNozCa",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Jarrell%20Cove_Wildlife_03-16-2023.jpg?itok=iT0RIRuC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-06/Jarrell%20Cove%20Sunset.jpg?itok=Wbh_o6kN",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-06/Jarrell%20Cove%20Site%2013%20%282%29.jpg?itok=z-j97czv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-06/Jarrell%20Cove%20Orchard%20Sites.jpg?itok=GRqYPPSc",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-06/Jarrell%20Cove%20Long%20Dock.jpg?itok=nuBmjoM6"
+      ],
+      "lat": 47.2858,
+      "lon": -122.8811,
+      "mapId": -2147483442,
+      "park": "Jarrell Cove State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/jarrell-cove-state-park",
+      "resourceLocationId": -2147483604,
+      "sampleSites": [
+        [
+          "Main",
+          "18"
+        ],
+        [
+          "Main",
+          "16"
+        ],
+        [
+          "Main",
+          "19"
+        ]
+      ],
+      "transactionLocationId": -2147483615,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 19,
+      "city": "Shelton",
+      "date": "2026-08-28",
+      "distanceMiles": 46,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Potlatch_PicnicShelter2_06-17-2015.jpg?itok=jcQfQJMA",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Potlatch_PicnicShelter2_06-17-2015.jpg?itok=jcQfQJMA",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Potlatch_Campground_06-17-2015.jpg?itok=4oLcKBe8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Potlatch_Campground2_06-17-2015.jpg?itok=xtKYBe87",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Potlatch_Campsite_06-17-2015.jpg?itok=9MmhpFXr",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Potlatch_Campsite2_06-17-2015.jpg?itok=4-z7ma85",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/Potlatch_Horseshoes_06-17-2015.jpg?itok=fT-UoZta"
+      ],
+      "lat": 47.36226,
+      "lon": -123.1579,
+      "mapId": -2147483337,
+      "park": "Potlatch State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/potlatch-state-park",
+      "resourceLocationId": -2147483569,
+      "sampleSites": [
+        [
+          "South",
+          "14"
+        ],
+        [
+          "South",
+          "16"
+        ],
+        [
+          "South",
+          "17"
+        ],
+        [
+          "South",
+          "13"
+        ],
+        [
+          "South",
+          "20"
+        ],
+        [
+          "South",
+          "3"
+        ],
+        [
+          "Central",
+          "37"
+        ],
+        [
+          "Central",
+          "52"
+        ]
+      ],
+      "transactionLocationId": -2147483590,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Concrete",
+      "date": "2026-08-28",
+      "distanceMiles": 67,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_WelcomeSign.jpg?itok=Y36MiyGE",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_WelcomeSign.jpg?itok=Y36MiyGE",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_TrailSign.jpg?itok=SL-WK8ym",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_PicnicArea.jpg?itok=v8IYQ8AC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_Trail4.jpg?itok=qGnftmV8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_VisitorCenter.jpg?itok=5YNoSfgk",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Rasar_DayUse.jpg?itok=LTKPn12B"
+      ],
+      "lat": 48.51847,
+      "lon": -121.9033,
+      "mapId": -2147483362,
+      "park": "Rasar State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/rasar-state-park",
+      "resourceLocationId": -2147483567,
+      "sampleSites": [
+        [
+          "Sites 24-48, Adirondacks",
+          "45"
+        ]
+      ],
+      "transactionLocationId": -2147483588,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Montesano",
+      "date": "2026-08-28",
+      "distanceMiles": 76,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/LakeSylvia_Reflections%20on%20Lake_03-20-2023.jpg?itok=lMiPnLLy",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/LakeSylvia_Reflections%20on%20Lake_03-20-2023.jpg?itok=lMiPnLLy",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Lake%20Sylvia%20Entrance%20Sign.jpg?itok=QYIrYnfd",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Lake%20Sylvia%20post%20draw%20down%201.jpg?itok=PAE_rli9",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Lake%20Sylvia%20post%20draw%20down%203.jpg?itok=21DwGtul",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Lake%20Sylvia%20post%20draw%20down%202.jpg?itok=camGpDvJ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Lake%20Sylvia%20post%20draw%20down%204.jpg?itok=m4fNmVyO"
+      ],
+      "lat": 46.9916,
+      "lon": -123.6012,
+      "mapId": -2147483437,
+      "park": "Lake Sylvia State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/lake-sylvia-state-park",
+      "resourceLocationId": -2147483595,
+      "sampleSites": [
+        [
+          "Main",
+          "37"
+        ]
+      ],
+      "transactionLocationId": -2147483609,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 9,
+      "city": "Winlock",
+      "date": "2026-08-28",
+      "distanceMiles": 78,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Entrance%26RangerStation_03-01-2023.jpg?itok=yW4yzQY-",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Entrance%26RangerStation_03-01-2023.jpg?itok=yW4yzQY-",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Amphitheater_03-01-2023.jpg?itok=WtzVe709",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Bathroom_03-01-2023.jpg?itok=2jYIOgXN",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Campsite_03-01-2023.jpg?itok=vp8LU6zw",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Firecircle_03-01-2023.jpg?itok=1OZmT8O7",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Lewis%26Clark_Footbridge_03-01-2023.jpg?itok=af_59VN1"
+      ],
+      "lat": 46.5225,
+      "lon": -122.8133,
+      "mapId": -2147483373,
+      "park": "Lewis and Clark State Park (SW Washington)",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/lewis-clark-state-park",
+      "resourceLocationId": -2147483592,
+      "sampleSites": [
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "5"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "4"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "2"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "9"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "17"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "10"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "11"
+        ],
+        [
+          "Sites 1-25, HB1 & Shelter",
+          "23"
+        ]
+      ],
+      "transactionLocationId": -2147483606,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 4,
+      "city": "Chehalis",
+      "date": "2026-08-28",
+      "distanceMiles": 80,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Waterfall.jpg?itok=zfh-5WRu",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Waterfall.jpg?itok=zfh-5WRu",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_Campsite.jpg?itok=GlXsH2Xf",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_ChehalisRiver.jpg?itok=_C89h7pj",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_KitchenShelter.jpg?itok=Jr1SaiL8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_KitchenShelter2.jpg?itok=H3_47DGC",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-07/RainbowFalls_RangerStation.jpg?itok=cPEUtWVf"
+      ],
+      "lat": 46.63442,
+      "lon": -123.2341,
+      "mapId": -2147483423,
+      "park": "Rainbow Falls State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/rainbow-falls-state-park",
+      "resourceLocationId": -2147483568,
+      "sampleSites": [
+        [
+          "Campground",
+          "3"
+        ],
+        [
+          "Campground",
+          "24"
+        ],
+        [
+          "Campground",
+          "48"
+        ],
+        [
+          "Campground",
+          "E1"
+        ]
+      ],
+      "transactionLocationId": -2147483589,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 9,
+      "city": "Castle Rock",
+      "date": "2026-08-28",
+      "distanceMiles": 92,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-01/Seaquest%20View%20MT%20ST%20Helens.JPG?itok=-KYm0PGi",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2024-01/Seaquest%20View%20MT%20ST%20Helens.JPG?itok=-KYm0PGi",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Seaquest_Picnic_02232023.jpg?itok=0ro6yIdf",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Seaquest_PineTrees_02232023.jpg?itok=OTH5ukIf",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/Seaquest_PrimitiveHikingTrailSign_02102023.jpg?itok=6jjvLmHw",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-10/Seaquest%20yurt%20snow.jpg?itok=Bg55xKIN",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-05/Seaquest_BlueHeron.jpg?itok=lBSIz1lr"
+      ],
+      "lat": 46.29573,
+      "lon": -122.8176,
+      "mapId": -2147483358,
+      "park": "Seaquest State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/seaquest-state-park",
+      "resourceLocationId": -2147483558,
+      "sampleSites": [
+        [
+          "A",
+          "T11"
+        ],
+        [
+          "A",
+          "44"
+        ],
+        [
+          "A",
+          "2"
+        ],
+        [
+          "A",
+          "45"
+        ],
+        [
+          "A",
+          "43"
+        ],
+        [
+          "B",
+          "64"
+        ],
+        [
+          "B",
+          "62"
+        ],
+        [
+          "B",
+          "68"
+        ]
+      ],
+      "transactionLocationId": -2147483582,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 6,
+      "city": "Orondo",
+      "date": "2026-08-28",
+      "distanceMiles": 95,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Daroga%20Overview.jpg?itok=xRZt-NnQ",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Daroga%20Overview.jpg?itok=xRZt-NnQ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Daroga%20Beach.jpg?itok=aIprXQpI",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Daroga%20Bench.jpg?itok=f1fNH1J1",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Daroga%20Boat%20Launch.jpg?itok=BmzL1uFh",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Daroga%20Campground.jpg?itok=ordxehNU",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/Daroga%20Campsite.jpg?itok=_2ZQv7u7"
+      ],
+      "lat": 47.70774,
+      "lon": -120.1958,
+      "mapId": -2147483390,
+      "park": "Daroga State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/daroga-state-park",
+      "resourceLocationId": -2147483626,
+      "sampleSites": [
+        [
+          "Sites 29 to 45",
+          "37"
+        ],
+        [
+          "Sites 29 to 45",
+          "36"
+        ],
+        [
+          "Sites 29 to 45",
+          "40"
+        ],
+        [
+          "Sites 29 to 45",
+          "39"
+        ],
+        [
+          "Sites 29 to 45",
+          "38"
+        ],
+        [
+          "Sites 29 to 45",
+          "41"
+        ]
+      ],
+      "transactionLocationId": -2147483632,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 1,
+      "city": "Chelan",
+      "date": "2026-08-28",
+      "distanceMiles": 96,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/25MileCreek_Docks_0.jpg?itok=SDMXn2Sh",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/25MileCreek_Docks_0.jpg?itok=SDMXn2Sh",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/25MileCreeK_BeachPicnicArea.jpg?itok=AVenVQ3d",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/25MileCreek_RiverPicnic.jpg?itok=XPjX8XK4",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/25MileCreek_Store.jpg?itok=5U5uzQuT",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/25MileCreek_Volleyball.jpg?itok=U5MHrLWA"
+      ],
+      "lat": 47.99218,
+      "lon": -120.2595,
+      "mapId": -2147483311,
+      "park": "Twenty-Five Mile Creek State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/twenty-five-mile-creek-state-park",
+      "resourceLocationId": -2147483548,
+      "sampleSites": [
+        [
+          "Lower and Upper Campgrounds",
+          "24"
+        ]
+      ],
+      "transactionLocationId": -2147483574,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 69,
+      "city": "Hoquiam",
+      "date": "2026-08-28",
+      "distanceMiles": 98,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake2_05-25-2015.jpg?itok=1A6fcHH-",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake2_05-25-2015.jpg?itok=1A6fcHH-",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2025-12/Ocean%20City%20Entrance%20Sign.JPG?itok=aoSx_Gs8",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_RangerStation_05-25-2015.jpg?itok=4V3imnrD",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake_05-15-2015.jpg?itok=srmUVntQ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Lake3_05-25-2015.jpg?itok=JDX1va_Y",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/OceanCity_Campsite_05-25-2015.jpg?itok=t_qeci34"
+      ],
+      "lat": 47.03147,
+      "lon": -124.1566,
+      "mapId": -2147483368,
+      "park": "Ocean City State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/ocean-city-state-park",
+      "resourceLocationId": -2147483582,
+      "sampleSites": [
+        [
+          "Loop 2",
+          "50"
+        ],
+        [
+          "Loop 2",
+          "69"
+        ],
+        [
+          "Loop 2",
+          "58"
+        ],
+        [
+          "Loop 2",
+          "40"
+        ],
+        [
+          "Loop 2",
+          "51"
+        ],
+        [
+          "Loop 2",
+          "49"
+        ],
+        [
+          "Loop 2",
+          "68"
+        ],
+        [
+          "Loop 2",
+          "63"
+        ]
+      ],
+      "transactionLocationId": -2147483597,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 55,
+      "city": "Westport",
+      "date": "2026-08-28",
+      "distanceMiles": 101,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-01/Twin%20Harbors%20beach%20sunset.jpeg?itok=YzT72dBS",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2026-01/Twin%20Harbors%20beach%20sunset.jpeg?itok=YzT72dBS",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_CampSite.jpg?itok=MJynjDVs",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_TentSite.jpg?itok=9iypdW0C",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_Cabins.jpg?itok=iYwCP_7g",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_Yurt3.jpg?itok=n9I_uFAE",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-04/TwinHarbors_ParkOffice.jpg?itok=jIaY4sLU"
+      ],
+      "lat": 46.85614,
+      "lon": -124.1082,
+      "mapId": -2147483352,
+      "park": "Twin Harbors State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/twin-harbors-state-park",
+      "resourceLocationId": -2147483547,
+      "sampleSites": [
+        [
+          "A",
+          "252"
+        ],
+        [
+          "A",
+          "201"
+        ],
+        [
+          "A",
+          "212"
+        ],
+        [
+          "A",
+          "192"
+        ],
+        [
+          "A",
+          "257"
+        ],
+        [
+          "A",
+          "229"
+        ],
+        [
+          "A",
+          "228"
+        ],
+        [
+          "A",
+          "198"
+        ]
+      ],
+      "transactionLocationId": -2147483573,
+      "zip": ""
+    },
+    {
+      "availableTentSites": 61,
+      "city": "Yakima",
+      "date": "2026-08-28",
+      "distanceMiles": 107,
+      "end": "2026-08-30",
+      "imageCredit": "Washington State Parks",
+      "imageUrl": "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicArea.jpg?itok=xYp7PyWF",
+      "imageUrls": [
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicArea.jpg?itok=xYp7PyWF",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-02/yakama-sportsman-7-birds-reeds.jpg?itok=nxkdPmNv",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_Campsites.jpg?itok=BlBldjHX",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_PicnicShelter.jpg?itok=6R4xmoYJ",
+        "https://parks.wa.gov/sites/default/files/styles/square_600/public/2023-03/YakimaSportsman_WaterView.jpg?itok=VCx2DNc0"
+      ],
+      "lat": 46.59188,
+      "lon": -120.4529,
+      "mapId": -2147483348,
+      "park": "Yakima Sportsman State Park",
+      "parkUrl": "https://parks.wa.gov/find-parks/state-parks/yakima-sportsman-state-park",
+      "resourceLocationId": -2147483540,
+      "sampleSites": [
+        [
+          "Sites 1-74",
+          "48"
+        ],
+        [
+          "Sites 1-74",
+          "32"
+        ],
+        [
+          "Sites 1-74",
+          "36"
+        ],
+        [
+          "Sites 1-74",
+          "69"
+        ],
+        [
+          "Sites 1-74",
+          "53"
+        ],
+        [
+          "Sites 1-74",
+          "2"
+        ],
+        [
+          "Sites 1-74",
+          "13"
+        ],
+        [
+          "Sites 1-74",
+          "70"
+        ]
+      ],
+      "transactionLocationId": -2147483566,
+      "zip": ""
     }
-  ]
+  ],
+  "source": "live"
 }
