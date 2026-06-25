@@ -217,11 +217,23 @@ class ApiHandler(BaseHTTPRequestHandler):
 
         if self.api_token:
             if self._auth_rate_limited():
+                _write_refresh_status(
+                    _refresh_status_path(self.results_path),
+                    "auth_rate_limited",
+                    f"Too many failed refresh password attempts from {self._auth_client_key()}.",
+                    _requested_months(parse_qs(parsed_url.query)),
+                )
                 self._send_json(429, {"error": "rate_limited", "detail": "Too many failed refresh password attempts."})
                 return
 
             if not self._authorized():
                 self._record_auth_failure()
+                _write_refresh_status(
+                    _refresh_status_path(self.results_path),
+                    "auth_failed",
+                    f"Refresh password failed from {self._auth_client_key()}.",
+                    _requested_months(parse_qs(parsed_url.query)),
+                )
                 self._send_json(401, {"error": "unauthorized"})
                 return
             self._record_auth_success()

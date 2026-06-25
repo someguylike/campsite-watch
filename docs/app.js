@@ -501,6 +501,9 @@ async function runSearch({ queryNas = true } = {}) {
         : "Showing the saved website snapshot.";
     }
 
+    if (apiBaseUrl) {
+      await appendRefreshDiagnostic(apiBaseUrl);
+    }
     renderResults(state.results);
   } finally {
     setSearchBusy(false);
@@ -694,6 +697,16 @@ async function pollRefreshStatus(apiBaseUrl) {
     if (status.status && !["queued", "running"].includes(status.status)) return;
   }
   searchNote.textContent = "NAS refresh is still running. Search again in a moment to load the latest snapshot.";
+}
+
+async function appendRefreshDiagnostic(apiBaseUrl) {
+  const status = await fetchRefreshStatus(apiBaseUrl);
+  if (!status || status.error || !isRefreshDiagnosticStatus(status.status)) return;
+  searchNote.textContent = `${searchNote.textContent} Latest refresh: ${refreshMessage(status)}`;
+}
+
+function isRefreshDiagnosticStatus(status) {
+  return ["auth_failed", "auth_rate_limited", "blocked", "error"].includes(status);
 }
 
 function refreshMessage(status) {
