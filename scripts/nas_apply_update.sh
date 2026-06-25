@@ -28,23 +28,7 @@ if grep -R -n "requires the password\\|Refresh asks the NAS\\|Search reads the l
   exit 1
 fi
 
-echo "Checking service status..."
-sudo systemctl --no-pager --lines=20 status "${SERVICE_NAME}" || true
-
-echo
-echo "Checking daily refresh timer..."
-sudo systemctl --no-pager --lines=20 status "${REFRESH_SERVICE_NAME}.timer" || true
-sudo systemctl list-timers "${REFRESH_SERVICE_NAME}.timer" || true
-
-echo
-echo "Checking API health..."
-curl --fail --silent "http://${API_HOST}:${API_PORT}/healthz"
-echo
-
-echo
-echo "Latest refresh status:"
-curl --silent "http://${API_HOST}:${API_PORT}/api/refresh-status"
-echo
+API_HOST="${API_HOST}" API_PORT="${API_PORT}" APP_DIR="${APP_DIR}" SERVICE_NAME="${SERVICE_NAME}" REFRESH_SERVICE_NAME="${REFRESH_SERVICE_NAME}" ./scripts/nas_worker_status.sh
 
 echo
 echo "Done. Open http://${API_HOST}:${API_PORT}/ and hard refresh the browser if stale text remains."
