@@ -91,7 +91,7 @@ cd /path/to/campsite-watch
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -e '.[browser]'
-python -m playwright install --with-deps chromium
+python -m playwright install chromium
 ```
 
 Start the LAN-only API and website. Bind it to the NAS LAN address so it is reachable only from devices on the same network:
